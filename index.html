@@ -1,0 +1,3468 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#05080f">
+<title>Lab de Redes 3D · escenarios desde .drawio, PDF y Word</title>
+<meta name="description" content="Laboratorio de redes en 3D: convierte archivos .drawio, documentos, PDF e imágenes en un escenario navegable. Sin backend, sin dependencias.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%238b5cf6'/%3E%3Cpath d='M8 24h16M11 24v-7h10v7M16 17v-5m-3 0h6' stroke='%2304121e' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>/* =====================================================================================================
+   base.css — Sistema visual compartido por las dos aplicaciones del skill redes-3d-lab.
+   Tema oscuro por defecto, tema claro con [data-theme="light"]. Sin fuentes ni recursos externos.
+   ===================================================================================================== */
+
+:root {
+  --fuente: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Code", "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  --fondo-0: #05080f;
+  --fondo-1: #070c17;
+  --fondo-2: #0b1220;
+  --panel: rgba(13, 20, 34, 0.72);
+  --panel-2: #101a2c;
+  --panel-3: #16233a;
+  --borde: rgba(148, 178, 224, 0.14);
+  --borde-fuerte: rgba(148, 178, 224, 0.28);
+
+  --texto: #e8eefb;
+  --texto-2: #a4b3cc;
+  --texto-3: #6c7d99;
+
+  --acento: #38bdf8;
+  --acento-2: #8b5cf6;
+  --acento-3: #22d3ee;
+  --ok: #34d399;
+  --alerta: #fbbf24;
+  --peligro: #fb7185;
+
+  --radio: 14px;
+  --radio-sm: 10px;
+  --sombra: 0 18px 50px -22px rgba(2, 6, 20, 0.95), 0 2px 10px -4px rgba(2, 6, 20, 0.6);
+  --anillo: 0 0 0 1px rgba(56, 189, 248, 0.35), 0 0 26px -6px rgba(56, 189, 248, 0.45);
+  --vel: 180ms;
+}
+
+[data-theme="light"] {
+  --fondo-0: #eef3fb;
+  --fondo-1: #f6f9ff;
+  --fondo-2: #ffffff;
+  --panel: rgba(255, 255, 255, 0.82);
+  --panel-2: #ffffff;
+  --panel-3: #eef3fb;
+  --borde: rgba(30, 58, 95, 0.12);
+  --borde-fuerte: rgba(30, 58, 95, 0.24);
+  --texto: #0d1b2e;
+  --texto-2: #43536e;
+  --texto-3: #6b7b96;
+  --acento: #0284c7;
+  --acento-2: #7c3aed;
+  --acento-3: #0891b2;
+  --sombra: 0 18px 44px -26px rgba(15, 35, 70, 0.45), 0 1px 3px rgba(15, 35, 70, 0.08);
+  --anillo: 0 0 0 1px rgba(2, 132, 199, 0.3), 0 0 22px -8px rgba(2, 132, 199, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  color: var(--texto);
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(56, 189, 248, 0.16), transparent 62%),
+    radial-gradient(900px 560px at 92% 4%, rgba(139, 92, 246, 0.16), transparent 60%),
+    radial-gradient(760px 520px at 50% 108%, rgba(34, 211, 238, 0.10), transparent 62%),
+    linear-gradient(180deg, var(--fondo-1), var(--fondo-0) 44%, #04070d 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+[data-theme="light"] body {
+  background:
+    radial-gradient(1000px 560px at 10% -10%, rgba(2, 132, 199, 0.13), transparent 60%),
+    radial-gradient(860px 520px at 94% 2%, rgba(124, 58, 237, 0.11), transparent 58%),
+    linear-gradient(180deg, #ffffff, var(--fondo-0) 50%, #e6eefa 100%);
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; border-radius: 6px; }
+::selection { background: rgba(56, 189, 248, 0.34); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--borde-fuerte); border-radius: 20px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--texto-3); background-clip: content-box; }
+
+/* ------------------------------------------------------------------ estructura */
+.app {
+  height: 100%;
+  width: 100vw;
+  max-width: 100vw;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  padding: 12px clamp(14px, 2.4vw, 26px);
+  border-bottom: 1px solid var(--borde);
+  background: linear-gradient(180deg, rgba(10, 16, 28, 0.86), rgba(8, 13, 23, 0.5));
+  backdrop-filter: blur(18px) saturate(140%);
+  position: relative;
+  z-index: 30;
+}
+[data-theme="light"] .barra { background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55)); }
+
+.marca { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.marca-logo {
+  width: 38px; height: 38px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  border-radius: 12px;
+  color: #04121e;
+  background: conic-gradient(from 140deg, var(--acento-3), var(--acento), var(--acento-2), var(--acento-3));
+  box-shadow: 0 8px 22px -10px rgba(56, 189, 248, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.marca-logo svg { width: 22px; height: 22px; }
+.marca-txt { min-width: 0; }
+.marca-titulo {
+  margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.marca-sub { font-size: 11.5px; color: var(--texto-3); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pestanas {
+  display: flex; gap: 4px; padding: 4px; min-width: 0; max-width: 100%;
+  border-radius: 12px; border: 1px solid var(--borde);
+  background: rgba(8, 14, 26, 0.6);
+  overflow-x: auto; scrollbar-width: none;
+}
+.pestanas::-webkit-scrollbar { display: none; }
+[data-theme="light"] .pestanas { background: rgba(255, 255, 255, 0.7); }
+.pestana {
+  appearance: none; border: 0; cursor: pointer;
+  padding: 8px 13px; border-radius: 9px;
+  background: transparent; color: var(--texto-2);
+  font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: background var(--vel), box-shadow var(--vel), border-color var(--vel);
+}
+.pestana:hover { color: var(--texto); background: rgba(148, 178, 224, 0.08); }
+.pestana[aria-selected="true"] {
+  color: #04121e;
+  background: linear-gradient(135deg, var(--acento-3), var(--acento));
+  box-shadow: 0 6px 18px -8px rgba(56, 189, 248, 0.9);
+}
+[data-theme="light"] .pestana[aria-selected="true"] { color: #fff; }
+
+.barra-fin { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* --------------------------------------------------------------------- botones */
+.btn {
+  appearance: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--borde-fuerte);
+  background: rgba(148, 178, 224, 0.07);
+  color: var(--texto);
+  font-size: 12.5px; font-weight: 600;
+  transition: background var(--vel), border-color var(--vel), transform var(--vel), box-shadow var(--vel);
+}
+.btn:hover { background: rgba(148, 178, 224, 0.14); border-color: var(--texto-3); }
+.btn:active { transform: translateY(1px); }
+.btn svg { width: 15px; height: 15px; }
+.btn--acento {
+  color: #04121e; border-color: transparent;
+  background: linear-gradient(135deg, var(--acento-3), var(--acento));
+  box-shadow: 0 10px 24px -14px rgba(56, 189, 248, 0.95);
+}
+.btn--acento:hover { filter: brightness(1.07); }
+[data-theme="light"] .btn--acento { color: #fff; }
+.btn--icono { padding: 8px; }
+.btn[aria-pressed="true"] { background: rgba(56, 189, 248, 0.2); border-color: var(--acento); color: var(--texto); }
+
+.seg { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--borde); border-radius: 10px; background: rgba(8, 14, 26, 0.55); }
+[data-theme="light"] .seg { background: rgba(255, 255, 255, 0.7); }
+.seg button {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--texto-3);
+  transition: all var(--vel);
+}
+.seg button:hover { color: var(--texto); }
+.seg button[aria-pressed="true"] { color: var(--texto); background: rgba(56, 189, 248, 0.16); box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.35); }
+
+select.campo, input.campo, textarea.campo {
+  appearance: none;
+  padding: 8px 11px; border-radius: 10px;
+  border: 1px solid var(--borde-fuerte);
+  background: rgba(8, 14, 26, 0.66);
+  color: var(--texto); font-size: 12.5px;
+  transition: border-color var(--vel), box-shadow var(--vel);
+}
+[data-theme="light"] select.campo, [data-theme="light"] input.campo, [data-theme="light"] textarea.campo { background: #fff; }
+select.campo:focus, input.campo:focus, textarea.campo:focus { border-color: var(--acento); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16); outline: none; }
+
+/* ------------------------------------------------------------------- estructura */
+main { position: relative; min-height: 0; display: grid; min-width: 0; }
+.vista { display: none; min-height: 0; min-width: 0; }
+.vista:not([hidden]) { display: grid; }
+
+.vista--topologia { grid-template-columns: minmax(0, 1fr) clamp(300px, 26vw, 400px); gap: 0; }
+
+.lienzo {
+  position: relative; min-height: 0; overflow: hidden;
+  border-right: 1px solid var(--borde);
+}
+.lienzo svg#topologia {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; display: block; touch-action: none;
+  cursor: grab; color: #8fb3dd;
+}
+.lienzo svg#topologia.arrastrando { cursor: grabbing; }
+
+.hud { position: absolute; inset: 0; pointer-events: none; padding: clamp(10px, 1.4vw, 18px); display: flex; flex-direction: column; gap: 10px; }
+.hud > * { pointer-events: auto; }
+
+.titulo-flotante {
+  max-width: 430px;
+  padding: 12px 15px;
+  border-radius: var(--radio);
+  border: 1px solid var(--borde);
+  background: var(--panel);
+  backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: var(--sombra);
+}
+.titulo-flotante h1, .titulo-flotante h2 { margin: 0 0 4px; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.titulo-flotante p { margin: 0; font-size: 12px; color: var(--texto-2); line-height: 1.45; }
+.titulo-flotante .pista { margin-top: 9px; font-size: 10.5px; color: var(--texto-3); line-height: 1.5; }
+
+.kpis { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.kpi {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 5px 9px; border-radius: 9px;
+  border: 1px solid var(--borde);
+  background: rgba(148, 178, 224, 0.07);
+  font-size: 11px; color: var(--texto-3);
+}
+.kpi b { font-size: 13px; color: var(--texto); font-variant-numeric: tabular-nums; }
+
+.hud-pie { margin-top: auto; display: flex; align-items: end; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+.leyenda {
+  display: flex; flex-wrap: wrap; gap: 6px 10px; max-width: 520px;
+  padding: 10px 12px; border-radius: var(--radio-sm);
+  border: 1px solid var(--borde); background: var(--panel);
+  backdrop-filter: blur(14px); box-shadow: var(--sombra);
+  font-size: 11.5px; color: var(--texto-2);
+}
+.leyenda .it { display: inline-flex; align-items: center; gap: 6px; }
+.leyenda .pt { width: 9px; height: 9px; border-radius: 3px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18) inset; }
+
+.controles {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 7px; border-radius: var(--radio-sm);
+  border: 1px solid var(--borde); background: var(--panel);
+  backdrop-filter: blur(14px); box-shadow: var(--sombra);
+}
+
+.ayuda {
+  position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%);
+  font-size: 11px; color: var(--texto-3); text-align: center;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--borde); background: var(--panel);
+  backdrop-filter: blur(12px);
+  white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis;
+}
+.kbd {
+  font-family: var(--mono); font-size: 10.5px;
+  padding: 1px 5px; border-radius: 5px;
+  border: 1px solid var(--borde-fuerte); background: rgba(148, 178, 224, 0.1);
+}
+
+/* ------------------------------------------------------------------ inspector */
+.inspector {
+  min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  background: linear-gradient(180deg, rgba(10, 16, 28, 0.55), rgba(7, 11, 20, 0.85));
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+[data-theme="light"] .inspector { background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(238, 243, 251, 0.9)); }
+
+.tarjeta {
+  border-radius: var(--radio);
+  border: 1px solid var(--borde);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--sombra);
+  padding: 14px;
+}
+.tarjeta--plana { box-shadow: none; background: rgba(148, 178, 224, 0.05); }
+.tarjeta h3 {
+  margin: 0 0 10px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--texto-3);
+  display: flex; align-items: center; gap: 8px;
+}
+.tarjeta h3::after { content: ""; flex: 1; height: 1px; background: var(--borde); }
+
+.cab-detalle { display: flex; gap: 12px; align-items: flex-start; }
+.cab-icono {
+  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px;
+  display: grid; place-items: center;
+  color: var(--acento);
+  background: rgba(56, 189, 248, 0.10);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+.cab-icono svg { width: 24px; height: 24px; }
+.cab-txt { min-width: 0; }
+.cab-txt h2 { margin: 0 0 3px; font-size: 15px; letter-spacing: -0.01em; line-height: 1.25; }
+.cab-txt p { margin: 0; font-size: 12px; color: var(--texto-2); }
+
+.ficha { display: grid; grid-template-columns: 1fr; gap: 1px; margin: 0; border-radius: var(--radio-sm); overflow: hidden; border: 1px solid var(--borde); }
+.ficha > div { display: grid; grid-template-columns: 104px 1fr; gap: 10px; padding: 8px 10px; background: rgba(148, 178, 224, 0.04); font-size: 12px; }
+.ficha > div:nth-child(odd) { background: rgba(148, 178, 224, 0.075); }
+.ficha dt, .ficha .k { color: var(--texto-3); font-size: 11.5px; }
+.ficha .v { color: var(--texto); overflow-wrap: anywhere; }
+.mono { font-family: var(--mono); font-size: 11.5px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 8px; border-radius: 8px;
+  border: 1px solid var(--borde-fuerte);
+  background: rgba(148, 178, 224, 0.08);
+  font-size: 11px; font-weight: 600; color: var(--texto-2);
+  cursor: pointer; transition: all var(--vel);
+}
+.chip:hover { color: var(--texto); border-color: var(--acento); background: rgba(56, 189, 248, 0.13); }
+.chip[aria-pressed="true"] { color: #04121e; background: var(--acento); border-color: transparent; }
+[data-theme="light"] .chip[aria-pressed="true"] { color: #fff; }
+.chip .pt { width: 7px; height: 7px; border-radius: 50%; }
+
+.nota {
+  font-size: 12px; line-height: 1.55; color: var(--texto-2);
+  padding: 10px 12px; border-radius: var(--radio-sm);
+  border-left: 2px solid var(--acento);
+  background: rgba(56, 189, 248, 0.07);
+}
+.nota + .nota { margin-top: 8px; }
+.nota b { color: var(--texto); }
+
+.vacio { text-align: center; padding: 26px 10px; color: var(--texto-3); font-size: 12.5px; line-height: 1.6; }
+.vacio svg { width: 34px; height: 34px; opacity: 0.5; margin-bottom: 8px; }
+
+/* --------------------------------------------------------------------- tablas */
+.tabla-envoltura { overflow: auto; border-radius: var(--radio); border: 1px solid var(--borde); max-height: 46vh; }
+table.tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.tabla th, table.tabla td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+table.tabla th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--panel-3); color: var(--texto-2);
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+}
+table.tabla tbody tr:hover { background: rgba(56, 189, 248, 0.07); }
+table.tabla td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ secciones */
+.seccion { min-height: 0; overflow-y: auto; padding: clamp(14px, 2vw, 26px); display: grid; align-content: start; gap: 14px; }
+.seccion-cab { display: flex; align-items: end; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.seccion-cab h2 { margin: 0; font-size: 18px; letter-spacing: -0.015em; }
+.seccion-cab p { margin: 3px 0 0; font-size: 12.5px; color: var(--texto-2); max-width: 70ch; }
+
+.rejilla { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+.acordeon { display: grid; gap: 8px; }
+.acordeon details {
+  border: 1px solid var(--borde); border-radius: var(--radio-sm);
+  background: rgba(148, 178, 224, 0.045); overflow: hidden;
+}
+.acordeon summary {
+  cursor: pointer; padding: 11px 13px; font-size: 12.5px; font-weight: 600;
+  display: flex; align-items: center; gap: 9px; list-style: none;
+}
+.acordeon summary::-webkit-details-marker { display: none; }
+.acordeon summary::after { content: "+"; margin-left: auto; color: var(--texto-3); font-weight: 500; }
+.acordeon details[open] summary::after { content: "−"; }
+.acordeon .cuerpo { padding: 0 13px 13px; font-size: 12.5px; color: var(--texto-2); line-height: 1.6; }
+
+/* ------------------------------------------------------------------ protocolos */
+.pila-capas { display: grid; gap: 6px; }
+.capa-nivel {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 11px; border-radius: 9px;
+  border: 1px solid var(--borde); background: rgba(148, 178, 224, 0.06);
+  font-size: 11.5px; transition: all 260ms;
+}
+.capa-nivel .n { font-family: var(--mono); font-size: 10.5px; color: var(--texto-3); min-width: 18px; }
+.capa-nivel .t { font-weight: 600; color: var(--texto-2); }
+.capa-nivel.activa { border-color: var(--acento); background: rgba(56, 189, 248, 0.14); box-shadow: var(--anillo); }
+.capa-nivel.activa .t { color: var(--texto); }
+
+.lista-protos { display: grid; gap: 6px; }
+.proto {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 11px; border-radius: 10px; cursor: pointer; text-align: left;
+  border: 1px solid var(--borde); background: rgba(148, 178, 224, 0.05);
+  transition: all var(--vel);
+}
+.proto:hover { border-color: var(--borde-fuerte); background: rgba(148, 178, 224, 0.1); }
+.proto[aria-pressed="true"] { border-color: var(--acento); background: rgba(56, 189, 248, 0.14); }
+.proto .pt { width: 8px; height: 8px; border-radius: 3px; flex: 0 0 auto; }
+.proto b { font-size: 12.5px; }
+.proto span { font-size: 11px; color: var(--texto-3); margin-left: auto; }
+
+/* ------------------------------------------------------------------ simulación */
+.ruta {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  padding: 10px; border-radius: var(--radio-sm);
+  border: 1px solid var(--borde); background: rgba(148, 178, 224, 0.05);
+}
+.salto {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 9px; border-radius: 8px;
+  font-size: 11.5px; font-weight: 600;
+  border: 1px solid var(--borde-fuerte); background: var(--panel-2);
+  animation: aparecer 320ms both;
+}
+.salto .n { font-family: var(--mono); font-size: 10px; color: var(--texto-3); }
+.flecha { color: var(--texto-3); font-size: 11px; }
+
+@keyframes aparecer { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.form-fila { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; }
+.form-fila label { display: grid; gap: 5px; font-size: 11px; color: var(--texto-3); font-weight: 600; }
+
+/* ---------------------------------------------------------------------- toast */
+.toasts { position: fixed; z-index: 90; right: 16px; bottom: 16px; display: grid; gap: 8px; justify-items: end; pointer-events: none; }
+.toast {
+  padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--borde-fuerte);
+  background: var(--panel-2); color: var(--texto);
+  font-size: 12.5px; box-shadow: var(--sombra);
+  animation: subir 240ms both;
+  max-width: 340px;
+}
+@keyframes subir { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ------------------------------------------------------------ capa SVG del motor */
+.m3-cartel { }
+.m3-nombre { font-family: var(--fuente); font-size: 11.5px; font-weight: 700; fill: #ffffff; letter-spacing: -0.005em; }
+[data-theme="light"] .m3-nombre { fill: #0b1626; }
+[data-theme="light"] .lienzo svg#topologia { color: #55739b; }
+.m3-sub { font-family: var(--fuente); font-size: 9.5px; font-weight: 600; fill: rgba(226, 236, 252, 0.62); }
+[data-theme="light"] .m3-sub { fill: rgba(16, 33, 56, 0.62); }
+.m3-ip { font-family: var(--mono); font-size: 9px; fill: rgba(148, 178, 224, 0.75); }
+.m3-etq-txt { font-family: var(--fuente); font-size: 10px; font-weight: 600; fill: var(--texto-2); }
+.m3-zona-txt {
+  font-family: var(--fuente); font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  fill: rgba(148, 178, 224, 0.8);
+}
+.m3-n .m3-led { filter: drop-shadow(0 0 4px currentColor); }
+.m3-n.sel > rect:first-child { filter: drop-shadow(0 12px 26px rgba(2, 6, 20, 0.6)); }
+.m3-n.hl > rect:first-child { stroke-dasharray: 5 4; }
+.m3-hit { cursor: pointer; }
+.m3-n { transition: opacity 160ms; }
+svg#topologia text { pointer-events: none; user-select: none; }
+
+/* --------------------------------------------------------------------- varios */
+.solo-lector {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.oculto { display: none !important; }
+.carga {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+  background: rgba(4, 8, 15, 0.72); backdrop-filter: blur(6px);
+}
+.carga-caja { text-align: center; font-size: 12.5px; color: var(--texto-2); }
+.anillo {
+  width: 34px; height: 34px; margin: 0 auto 12px;
+  border-radius: 50%; border: 2px solid var(--borde-fuerte);
+  border-top-color: var(--acento);
+  animation: girar 800ms linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------------------- responsive */
+@media (max-width: 1080px) {
+  .vista--topologia { grid-template-columns: 1fr; }
+  .inspector {
+    position: absolute; inset: auto 0 0 0; z-index: 20;
+    max-height: 46vh; border-top: 1px solid var(--borde-fuerte);
+    border-radius: 18px 18px 0 0;
+    transform: translateY(calc(100% - 52px));
+    transition: transform 260ms ease;
+  }
+  .inspector.abierto, .inspector:hover { transform: none; }
+  .inspector::before {
+    content: ""; position: sticky; top: -16px; display: block;
+    width: 44px; height: 4px; border-radius: 4px; margin: -6px auto 8px;
+    background: var(--borde-fuerte);
+  }
+}
+@media (max-width: 720px) {
+  .marca-sub { display: none; }
+  .barra { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  .barra-fin { width: 100%; margin-left: 0; }
+  .pestanas { order: 3; flex: 1 0 100%; width: 100%; max-width: 100%; min-width: 0; }
+  .ayuda { display: none; }
+  .leyenda { max-width: 100%; }
+  .titulo-flotante { max-width: 100%; }
+}
+
+/* Panel de detalles como hoja inferior en pantallas estrechas */
+@media (max-width: 1080px) {
+  .inspector { transform: translateY(calc(100% - 46px)); }
+  .inspector::after {
+    content: "Detalles · toca para abrir";
+    position: absolute; left: 0; right: 0; top: 14px;
+    text-align: center; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.04em; color: var(--texto-3);
+    pointer-events: none;
+  }
+  .inspector.abierto::after { content: none; }
+}
+@media (max-width: 720px) {
+  .titulo-flotante { padding: 9px 11px; }
+  .titulo-flotante h2 { font-size: 13.5px; }
+  .titulo-flotante p { font-size: 11px; }
+  .hud .kpis, .titulo-flotante .pista { display: none; }
+  .leyenda { font-size: 10.5px; gap: 4px 8px; }
+  .leyenda .it:nth-child(n+5) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+<style>/* =====================================================================================================
+   lab.css — Estilos propios del Lab de Redes 3D.
+   ===================================================================================================== */
+
+.st1 { stop-color: #1c2b45; }
+.st2 { stop-color: #0c1524; }
+[data-theme="light"] .st1 { stop-color: #ffffff; }
+[data-theme="light"] .st2 { stop-color: #e3ecf9; }
+.stHalo { stop-color: rgba(139, 92, 246, 0.20); }
+[data-theme="light"] .stHalo { stop-color: rgba(124, 58, 237, 0.13); }
+
+/* ------------------------------------------------------------------ zona de soltar */
+.zona-soltar {
+  display: grid; place-items: center; gap: 6px;
+  padding: 34px 18px; text-align: center; cursor: pointer;
+  border: 1.5px dashed var(--borde-fuerte); border-radius: var(--radio);
+  background: radial-gradient(600px 200px at 50% 0%, rgba(139, 92, 246, 0.10), transparent 70%);
+  transition: border-color var(--vel), background var(--vel), transform var(--vel);
+}
+.zona-soltar:hover, .zona-soltar:focus-visible { border-color: var(--acento-2); background: rgba(139, 92, 246, 0.10); }
+.zona-soltar svg { width: 34px; height: 34px; color: var(--acento-2); opacity: 0.85; }
+.zona-soltar b { font-size: 14px; }
+.zona-soltar span { font-size: 11.5px; color: var(--texto-3); }
+
+.velo-arrastre {
+  position: absolute; inset: 0; z-index: 15; display: none;
+  place-items: center; text-align: center;
+  background: rgba(9, 14, 26, 0.72);
+  backdrop-filter: blur(4px);
+  border: 2px dashed var(--acento-2);
+  border-radius: 10px;
+  color: var(--texto);
+  pointer-events: none;
+}
+.zona-arrastre-activa .velo-arrastre { display: grid; }
+.velo-arrastre svg { width: 42px; height: 42px; color: var(--acento-2); margin-bottom: 10px; }
+.velo-arrastre p { margin: 0; font-size: 13px; font-weight: 600; }
+
+/* ------------------------------------------------------------------------ avisos */
+.aviso {
+  display: flex; gap: 9px; align-items: flex-start;
+  padding: 10px 12px; border-radius: var(--radio-sm);
+  border: 1px solid rgba(251, 191, 36, 0.34);
+  background: rgba(251, 191, 36, 0.09);
+  font-size: 12px; line-height: 1.5; color: var(--texto-2);
+}
+.aviso + .aviso { margin-top: 7px; }
+.aviso b { color: var(--texto); }
+.aviso--error { border-color: rgba(251, 113, 133, 0.4); background: rgba(251, 113, 133, 0.09); }
+
+/* ------------------------------------------------------------------- tabla mapeo */
+.mapeo { display: grid; gap: 8px; }
+.mapeo-fila {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 4px 10px; padding: 9px 11px; border-radius: 9px;
+  background: rgba(148, 178, 224, 0.055);
+  border: 1px solid var(--borde);
+}
+.mapeo-fila .n { font-size: 12px; font-weight: 600; }
+.mapeo-fila .d { font-size: 11px; color: var(--texto-3); grid-column: 1 / -1; }
+.mapeo-fila .et { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.et--ok { color: var(--ok); }
+.et--warn { color: var(--alerta); }
+.et--error { color: var(--peligro); }
+
+/* ---------------------------------------------------------------------- galería */
+.galeria { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.galeria figure { margin: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--borde); background: rgba(148, 178, 224, 0.06); }
+.galeria img { display: block; width: 100%; height: 90px; object-fit: cover; background: #0b1220; }
+.galeria figcaption { padding: 6px 8px; font-size: 10.5px; color: var(--texto-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ------------------------------------------------------------------ evidencias */
+.evidencia {
+  padding: 9px 11px; border-radius: 9px; margin-bottom: 7px;
+  border-left: 2px solid var(--acento-2);
+  background: rgba(139, 92, 246, 0.08);
+  font-size: 12px; line-height: 1.5; color: var(--texto-2);
+}
+.evidencia .fuente { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--texto-3); margin-bottom: 3px; }
+.evidencia mark { background: rgba(56, 189, 248, 0.24); color: inherit; border-radius: 3px; padding: 0 2px; }
+
+/* --------------------------------------------------------------------- simulación */
+#sim-caja .form-fila { gap: 8px; }
+#sim-caja label { flex: 1 1 120px; }
+#sim-caja select { width: 100%; }
+.ruta { margin-top: 10px; }
+
+/* Tabla de saltos compacta dentro del inspector */
+#sim-detalle table.tabla { font-size: 11px; }
+#sim-detalle table.tabla th, #sim-detalle table.tabla td { padding: 6px 7px; }
+#sim-detalle table.tabla th { font-size: 9.5px; letter-spacing: 0.04em; }
+
+/* ------------------------------------------------------------------- responsive */
+@media (max-width: 1080px) {
+  .inspector { max-height: 50vh; }
+}
+@media (max-width: 720px) {
+  .hud .kpis { display: none; }
+  .zona-soltar { padding: 22px 12px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="barra">
+    <div class="marca">
+      <div class="marca-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 20h16M7 20v-6h10v6M12 14V8m-3 0h6"/><circle cx="12" cy="5" r="2"/>
+        </svg>
+      </div>
+      <div class="marca-txt">
+        <h1 class="marca-titulo">Lab de Redes <span style="color:var(--acento-2)">3D</span></h1>
+        <div class="marca-sub">del archivo al escenario navegable · .drawio · PDF · Word · imágenes</div>
+      </div>
+    </div>
+
+    <nav class="pestanas" role="tablist" aria-label="Secciones">
+      <button class="pestana" role="tab" id="tab-escenario" aria-controls="vista-escenario" aria-selected="true">Escenario</button>
+      <button class="pestana" role="tab" id="tab-insumos" aria-controls="vista-insumos" aria-selected="false">Insumos</button>
+      <button class="pestana" role="tab" id="tab-evidencias" aria-controls="vista-evidencias" aria-selected="false">Evidencias</button>
+    </nav>
+
+    <div class="barra-fin">
+      <label class="solo-lector" for="sel-escena">Escena</label>
+      <select class="campo" id="sel-escena" title="Escena del insumo"></select>
+      <button class="btn" id="btn-cargar" title="Cargar archivos (.drawio, .pdf, .docx, .txt, .json, imágenes)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 16V4m-4 4 4-4 4 4"/><path d="M4 16v3h16v-3"/></svg>
+        Cargar
+      </button>
+      <button class="btn btn--icono" id="btn-tema" aria-pressed="false" title="Cambiar de tema" aria-label="Cambiar de tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <input type="file" id="archivos" multiple hidden accept=".drawio,.dio,.xml,.pdf,.docx,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.webp,.svg">
+    </div>
+  </header>
+
+  <main>
+    <!-- ================================================================ escenario -->
+    <section class="vista vista--topologia" id="vista-escenario" role="tabpanel" aria-labelledby="tab-escenario">
+      <div class="lienzo" id="zona-arrastre">
+        <svg id="lab" role="application" aria-label="Escenario de red en 3D. Arrastra para orbitar y usa las flechas para girar." tabindex="0">
+          <defs>
+            <linearGradient id="gCartel" x1="0" y1="0" x2="0.55" y2="1">
+              <stop offset="0" class="st1"/>
+              <stop offset="1" class="st2"/>
+            </linearGradient>
+            <radialGradient id="gSombra">
+              <stop offset="0" stop-color="#000" stop-opacity="0.62"/>
+              <stop offset="1" stop-color="#000" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="gHalos">
+              <stop offset="0" class="stHalo"/>
+              <stop offset="1" stop-color="#000" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="fGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="3.4"/>
+            </filter>
+          </defs>
+        </svg>
+
+        <div class="hud">
+          <div class="titulo-flotante">
+            <h2 id="hud-titulo">Escenario</h2>
+            <p id="hud-desc">Carga un .drawio para construir la topología, o adjunta documentos para reunir evidencias.</p>
+            <div class="kpis" id="hud-kpis"></div>
+            <p class="pista">Arrastra archivos aquí · arrastra el lienzo para orbitar · rueda para acercar · clic en un nodo para inspeccionarlo</p>
+          </div>
+
+          <div class="hud-pie">
+            <div class="leyenda" id="leyenda"></div>
+            <div class="controles">
+              <div class="seg" role="group" aria-label="Punto de vista">
+                <button data-preset="iso" aria-pressed="true">Iso</button>
+                <button data-preset="frontal" aria-pressed="false">Frente</button>
+                <button data-preset="cenital" aria-pressed="false">Cenital</button>
+              </div>
+              <button class="btn" id="btn-ajustar" title="Encuadrar todo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 15v5h-5M20 9V4h-5M4 15v5h5"/></svg>
+                Ajustar
+              </button>
+              <button class="btn" id="btn-girar" aria-pressed="false" title="Rotación automática">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/></svg>
+                Girar
+              </button>
+              <button class="btn" id="btn-exportar" title="Descargar la escena como JSON">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v12m-4-4 4 4 4-4"/><path d="M4 18v2h16v-2"/></svg>
+                Exportar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="velo-arrastre" id="velo-arrastre" aria-hidden="true">
+          <div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m-4 4 4-4 4 4"/><path d="M4 16v3h16v-3"/></svg>
+            <p>Suelta los archivos para construir el escenario</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="inspector" id="inspector" aria-live="polite" aria-label="Detalles y simulación"></aside>
+    </section>
+
+    <!-- ================================================================== insumos -->
+    <section class="vista" id="vista-insumos" role="tabpanel" aria-labelledby="tab-insumos" hidden>
+      <div class="seccion">
+        <div class="seccion-cab">
+          <div>
+            <h2>Insumos del laboratorio</h2>
+            <p>Todo se procesa en tu navegador: ningún archivo se sube a un servidor. Formatos: .drawio, .pdf, .docx, .txt, .md, .csv, .json e imágenes.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="btn-vaciar" title="Empezar de cero">Vaciar</button>
+            <button class="btn btn--acento" id="btn-cargar-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 16V4m-4 4 4-4 4 4"/><path d="M4 16v3h16v-3"/></svg>
+              Añadir archivos
+            </button>
+          </div>
+        </div>
+
+        <div class="zona-soltar" id="zona-soltar" tabindex="0" role="button" aria-label="Soltar archivos o pulsar para elegirlos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m-4 4 4-4 4 4"/><path d="M4 16v3h16v-3"/></svg>
+          <b>Arrastra tus archivos aquí</b>
+          <span>o pulsa para elegirlos · .drawio, .pdf, .docx, .txt, .csv, .json, imágenes</span>
+        </div>
+
+        <div id="avisos"></div>
+
+        <div class="rejilla">
+          <div class="tarjeta">
+            <h3>Archivos procesados</h3>
+            <div class="tabla-envoltura">
+              <table class="tabla">
+                <thead><tr><th>Archivo</th><th>Tipo</th><th>Resultado</th><th>Tamaño</th></tr></thead>
+                <tbody id="lista-fuentes"><tr><td colspan="4" class="vacio">Todavía no has cargado archivos.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tarjeta">
+            <h3>Cómo se interpretó cada archivo</h3>
+            <div id="tabla-mapeo"></div>
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <h3>Escenas detectadas</h3>
+          <div class="chips" id="chips-escenas"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================================================== evidencias -->
+    <section class="vista" id="vista-evidencias" role="tabpanel" aria-labelledby="tab-evidencias" hidden>
+      <div class="seccion">
+        <div class="seccion-cab">
+          <div>
+            <h2>Evidencias y datos extraídos</h2>
+            <p>Direcciones, VLANs y redes encontradas en los documentos, con su contexto. Se usan para justificar cada nodo del escenario.</p>
+          </div>
+          <div class="chips" id="ev-chips"></div>
+        </div>
+
+        <div class="rejilla">
+          <div class="tarjeta">
+            <h3>Direcciones IP documentadas</h3>
+            <div class="tabla-envoltura"><table class="tabla">
+              <thead><tr><th>IP</th><th>Archivo</th><th>Contexto</th></tr></thead>
+              <tbody id="inv-ips"></tbody>
+            </table></div>
+          </div>
+          <div class="tarjeta">
+            <h3>VLANs y redes</h3>
+            <div id="inv-vlan"></div>
+          </div>
+        </div>
+
+        <div class="rejilla">
+          <div class="tarjeta">
+            <h3>Documentos procesados</h3>
+            <div class="acordeon" id="lista-docs"></div>
+          </div>
+          <div class="tarjeta">
+            <h3>Imágenes adjuntas</h3>
+            <div class="galeria" id="galeria"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="carga oculto" id="carga"><div class="carga-caja"><div class="anillo"></div><div id="carga-texto">Procesando insumos…</div></div></div>
+
+<noscript><div style="padding:24px;font-family:system-ui">Esta aplicación necesita JavaScript y funciona sin servidor: los archivos se procesan en tu navegador.</div></noscript>
+
+<script>/* =====================================================================================================
+   codec.js — Descompresión e inspección de contenedores SIN dependencias.
+   · inflate (DEFLATE / RFC 1951) y descompresión zlib (RFC 1950)
+   · lector de archivos ZIP (que es lo que son .docx y .xlsx)
+   Es la base para leer .drawio comprimidos, .docx y los flujos de un PDF.
+   ===================================================================================================== */
+(function (R3) {
+  "use strict";
+
+  const LARGO_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+  const LARGO_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+  const DIST_BASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
+  const DIST_EXTRA = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+  const ORDEN_CODIGOS = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+
+  class LectorBits {
+    constructor(datos, desde) {
+      this.d = datos;
+      this.pos = desde || 0;
+      this.bitbuf = 0;
+      this.bitcnt = 0;
+    }
+    bits(n) {
+      let v = this.bitbuf;
+      while (this.bitcnt < n) {
+        if (this.pos >= this.d.length) throw new Error("inflate: datos truncados");
+        v |= this.d[this.pos++] << this.bitcnt;
+        this.bitcnt += 8;
+      }
+      this.bitbuf = v >>> n;
+      this.bitcnt -= n;
+      return v & ((1 << n) - 1);
+    }
+    alinear() { this.bitbuf = 0; this.bitcnt = 0; }
+  }
+
+  function tablaHuffman(longitudes) {
+    const cuenta = new Uint16Array(16);
+    for (let i = 0; i < longitudes.length; i++) cuenta[longitudes[i]]++;
+    cuenta[0] = 0;
+    const desplazamiento = new Uint16Array(16);
+    for (let i = 1; i < 16; i++) desplazamiento[i] = desplazamiento[i - 1] + cuenta[i - 1];
+    const simbolos = new Uint16Array(longitudes.length);
+    for (let s = 0; s < longitudes.length; s++) {
+      if (longitudes[s]) simbolos[desplazamiento[longitudes[s]]++] = s;
+    }
+    return { cuenta, simbolos };
+  }
+
+  function decodificar(lector, tabla) {
+    let codigo = 0, primero = 0, indice = 0;
+    for (let largo = 1; largo < 16; largo++) {
+      codigo |= lector.bits(1);
+      const cuenta = tabla.cuenta[largo];
+      if (codigo - primero < cuenta) return tabla.simbolos[indice + (codigo - primero)];
+      indice += cuenta;
+      primero = (primero + cuenta) << 1;
+      codigo <<= 1;
+    }
+    throw new Error("inflate: código Huffman inválido");
+  }
+
+  class Salida {
+    constructor(estimado) {
+      this.buf = new Uint8Array(Math.max(1024, estimado || 1024));
+      this.len = 0;
+    }
+    reservar(n) {
+      if (this.len + n <= this.buf.length) return;
+      let cap = this.buf.length;
+      while (cap < this.len + n) cap *= 2;
+      const nuevo = new Uint8Array(cap);
+      nuevo.set(this.buf.subarray(0, this.len));
+      this.buf = nuevo;
+    }
+    byte(b) { this.reservar(1); this.buf[this.len++] = b & 255; }
+    copiar(dist, largo) {
+      if (dist > this.len) throw new Error("inflate: distancia inválida");
+      this.reservar(largo);
+      let desde = this.len - dist;
+      for (let i = 0; i < largo; i++) this.buf[this.len++] = this.buf[desde++];
+    }
+    resultado() { return this.buf.subarray(0, this.len); }
+  }
+
+  /* ------------------------------------------------------------ inflate (RFC 1951) */
+  function inflateRaw(datos, desde) {
+    const lector = new LectorBits(datos, desde);
+    const salida = new Salida((datos.length || 1) * 5);
+    const LARGO_FIJO = new Uint8Array(288);
+    for (let i = 0; i < 144; i++) LARGO_FIJO[i] = 8;
+    for (let i = 144; i < 256; i++) LARGO_FIJO[i] = 9;
+    for (let i = 256; i < 280; i++) LARGO_FIJO[i] = 7;
+    for (let i = 280; i < 288; i++) LARGO_FIJO[i] = 8;
+    const DIST_FIJO = new Uint8Array(30).fill(5);
+    const tablaLargoFija = tablaHuffman(LARGO_FIJO);
+    const tablaDistFija = tablaHuffman(DIST_FIJO);
+
+    let ultimo = 0;
+    while (!ultimo) {
+      ultimo = lector.bits(1);
+      const tipo = lector.bits(2);
+      if (tipo === 0) {
+        lector.alinear();
+        const p = lector.pos;
+        if (p + 4 > datos.length) throw new Error("inflate: bloque almacenado truncado");
+        const len = datos[p] | (datos[p + 1] << 8);
+        const nlen = datos[p + 2] | (datos[p + 3] << 8);
+        if ((len ^ 0xffff) !== nlen) throw new Error("inflate: longitud inválida en bloque almacenado");
+        lector.pos = p + 4;
+        for (let i = 0; i < len; i++) {
+          if (lector.pos >= datos.length) throw new Error("inflate: bloque almacenado truncado");
+          salida.byte(datos[lector.pos++]);
+        }
+        continue;
+      }
+      let tablaLargo, tablaDist;
+      if (tipo === 1) {
+        tablaLargo = tablaLargoFija;
+        tablaDist = tablaDistFija;
+      } else if (tipo === 2) {
+        const nlen = lector.bits(5) + 257;
+        const ndist = lector.bits(5) + 1;
+        const ncodigo = lector.bits(4) + 4;
+        const longitudes = new Uint8Array(320);
+        for (let i = 0; i < ncodigo; i++) longitudes[ORDEN_CODIGOS[i]] = lector.bits(3);
+        const tablaCodigos = tablaHuffman(longitudes);
+        const total = nlen + ndist;
+        let i = 0;
+        const llenas = new Uint8Array(total);
+        while (i < total) {
+          const simbolo = decodificar(lector, tablaCodigos);
+          if (simbolo < 16) { llenas[i++] = simbolo; continue; }
+          let repetir = 0, valor = 0;
+          if (simbolo === 16) {
+            if (i === 0) throw new Error("inflate: repetición sin base");
+            valor = llenas[i - 1];
+            repetir = 3 + lector.bits(2);
+          } else if (simbolo === 17) repetir = 3 + lector.bits(3);
+          else repetir = 11 + lector.bits(7);
+          while (repetir-- && i < total) llenas[i++] = valor;
+        }
+        tablaLargo = tablaHuffman(llenas.subarray(0, nlen));
+        tablaDist = tablaHuffman(llenas.subarray(nlen));
+      } else {
+        throw new Error("inflate: tipo de bloque inválido");
+      }
+
+      for (;;) {
+        const simbolo = decodificar(lector, tablaLargo);
+        if (simbolo < 256) { salida.byte(simbolo); continue; }
+        if (simbolo === 256) break;
+        const idx = simbolo - 257;
+        if (idx >= LARGO_BASE.length) throw new Error("inflate: símbolo de longitud inválido");
+        const largo = LARGO_BASE[idx] + lector.bits(LARGO_EXTRA[idx]);
+        const dIdx = decodificar(lector, tablaDist);
+        if (dIdx >= DIST_BASE.length) throw new Error("inflate: símbolo de distancia inválido");
+        const dist = DIST_BASE[dIdx] + lector.bits(DIST_EXTRA[dIdx]);
+        salida.copiar(dist, largo);
+      }
+    }
+    return salida.resultado();
+  }
+
+  /* -------------------------------------------------------------- zlib (RFC 1950) */
+  function inflateZlib(datos) {
+    if (datos.length < 6) throw new Error("zlib: cabecera inválida");
+    const cmf = datos[0], flg = datos[1];
+    if ((cmf & 0x0f) !== 8) throw new Error("zlib: método de compresión distinto de deflate");
+    if (((cmf << 8) + flg) % 31 !== 0) throw new Error("zlib: cabecera corrupta");
+    const desde = (flg & 0x20) ? 6 : 2;   // con FDICT hay 4 bytes de diccionario
+    return inflateRaw(datos, desde);
+  }
+
+  /* ------------------------------------------------------------------- utilidades */
+  function texto(bytes) { return new TextDecoder("utf-8", { fatal: false }).decode(bytes); }
+  function base64ABytes(b64) {
+    const limpio = String(b64).replace(/\s+/g, "");
+    const bin = atob(limpio);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  /* ------------------------------------------------------------------------- ZIP */
+  function leerZip(bytes) {
+    const archivos = new Map();
+    // Localiza el fin del directorio central (EOCD) desde el final del archivo
+    let eocd = -1;
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65558); i--) {
+      if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error("ZIP: no se encontró el índice central (¿archivo dañado?)");
+    const leer16 = (p) => bytes[p] | (bytes[p + 1] << 8);
+    const leer32 = (p) => (bytes[p] | (bytes[p + 1] << 8) | (bytes[p + 2] << 16) | (bytes[p + 3] << 24)) >>> 0;
+    const total = leer16(eocd + 10);
+    let p = leer32(eocd + 16);
+    for (let i = 0; i < total; i++) {
+      if (leer32(p) !== 0x02014b50) break;
+      const metodo = leer16(p + 10);
+      const comprimido = leer32(p + 20);
+      const sinComprimir = leer32(p + 24);
+      const largoNombre = leer16(p + 28);
+      const largoExtra = leer16(p + 30);
+      const largoComentario = leer16(p + 32);
+      const local = leer32(p + 42);
+      const nombre = texto(bytes.subarray(p + 46, p + 46 + largoNombre));
+      p += 46 + largoNombre + largoExtra + largoComentario;
+
+      if (leer32(local) !== 0x04034b50) continue;
+      const nombreLocal = leer16(local + 26);
+      const extraLocal = leer16(local + 28);
+      const inicio = local + 30 + nombreLocal + extraLocal;
+      const crudo = bytes.subarray(inicio, inicio + (comprimido || sinComprimir));
+      let datos;
+      if (metodo === 0) datos = crudo;
+      else if (metodo === 8) datos = inflateRaw(crudo);
+      else continue;   // otros métodos (deflate64, bzip2…) no se usan en .docx
+      archivos.set(nombre, datos);
+    }
+    return archivos;
+  }
+
+  R3.Codec = { inflateRaw, inflateZlib, leerZip, texto, base64ABytes };
+})(window.R3 = window.R3 || {});
+</script>
+<script>/* =====================================================================================================
+   motor3d.js — Motor de visualización 3D en SVG, sin dependencias externas.
+   Proyección perspectiva real (cámara orbital), orden de pintado por profundidad, tarjetas
+   billboard, enlaces en arco, sombras de suelo, niebla por distancia y paquetes animados.
+
+   Espacio de coordenadas: X derecha, Y arriba (suelo en y=0), Z hacia el fondo.
+   API pública:  R3.Motor3D
+   ===================================================================================================== */
+(function (R3) {
+  "use strict";
+
+  /* ---------------------------------------------------------------- utilidades */
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (n) => (Math.round(n * 100) / 100).toString();
+
+  const ICONOS = {
+    nube: `<g transform="scale(1.7) translate(-12,-12)"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4a7.48 7.48 0 0 0-6.63 4.04A5.99 5.99 0 0 0 6 20h13a5 5 0 0 0 0-10z"/></g>`,
+    router: `<circle cx="0" cy="0" r="15"/><path d="M-8 -5h11m-3.5-3.5 3.5 3.5-3.5 3.5"/><path d="M8 5H-3m3.5-3.5L-3 5l3.5 3.5"/>`,
+    firewall: `<path d="M0 -16 14 -10v8c0 8-5.6 13.4-14 16.5C-8.4 11.4-14 6-14-2v-8z"/><path d="M-10 -3h20M-10 4h20"/><path d="M-4 -9.5v6.5M4 -3v6.5M-4 4v6"/>`,
+    switch: `<rect x="-17" y="-11" width="34" height="22" rx="4"/><path d="M-11 -4.5h11m-3.5-3.5 3.5 3.5-3.5 3.5"/><path d="M11 4.5H0m3.5-3.5L0 4.5l3.5 3.5"/>`,
+    servidor: `<rect x="-15" y="-16" width="30" height="14" rx="3"/><rect x="-15" y="2" width="30" height="14" rx="3"/><path d="M-9 -9h7M-9 9h7"/><circle cx="8" cy="-9" r="1.7"/><circle cx="8" cy="9" r="1.7"/>`,
+    ap: `<path d="M-15 -3a20 20 0 0 1 30 0"/><path d="M-9 3a12 12 0 0 1 18 0"/><circle cx="0" cy="10" r="2.6"/>`,
+    pc: `<rect x="-16" y="-14" width="32" height="22" rx="3"/><path d="M-6 16h12M0 8v8"/><path d="M-10 -6h11"/>`,
+    portatil: `<rect x="-15" y="-13" width="30" height="20" rx="2"/><path d="M-19 10h38l-3.5 4h-31z"/><path d="M-8 -6h11"/>`,
+    telefono: `<rect x="-10" y="-3" width="20" height="16" rx="3"/><path d="M-13 -10a13 7 0 0 1 26 0"/><path d="M-4 2h2M2 2h2M-4 7h2M2 7h2"/>`,
+    camara: `<path d="M-13 4a13 13 0 0 1 26 0"/><path d="M-17 4h34"/><circle cx="0" cy="0" r="3.4"/><path d="M0 4v6M-6 11h12"/>`,
+    nvr: `<rect x="-16" y="-10" width="32" height="20" rx="4"/><circle cx="-8" cy="0" r="3.4"/><path d="M0 -5h10M0 0h10M0 5h6"/>`,
+    alerta: `<path d="M0 -15 15 12H-15z"/><path d="M0 -5v8M0 6.5v1.5"/>`,
+    documento: `<path d="M-11 -15h14l8 8v22H-11z"/><path d="M3 -15v8h8"/><path d="M-6 -2h09M-6 4h12M-6 10h7"/>`,
+    persona: `<circle cx="0" cy="-8" r="6"/><path d="M-11 14c0-7 4.5-11 11-11s11 4 11 11"/>`,
+    desconocido: `<path d="M0 -14 13 -7v14L0 14-13 7v-14z"/><path d="M0 -4v5M0 4.5v1.5"/>`
+  };
+
+  /* Elevación por tipo de dispositivo (unidades de mundo). Mantiene la lectura por capas. */
+  const ALTURA_TIPO = {
+    nube: 3.4, firewall: 2.5, router: 2.3, switch: 1.75, servidor: 2.0, nvr: 1.35,
+    ap: 1.6, camara: 1.25, pc: 0.95, portatil: 0.95, telefono: 1.05, documento: 1.1,
+    persona: 0.9, desconocido: 1.2, alerta: 2.0
+  };
+
+  /* ------------------------------------------------------------------ cámara */
+  class Camara {
+    constructor() {
+      this.target = { x: 0, y: 1.4, z: 0 };
+      this.yaw = -0.62;
+      this.pitch = 0.55;
+      this.dist = 26;
+      this.fov = 42;
+      this.w = 1600;
+      this.h = 900;
+      this.minDist = 6;
+      this.maxDist = 90;
+    }
+    eye() {
+      const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+      return {
+        x: this.target.x + this.dist * cp * Math.cos(this.yaw),
+        y: this.target.y + this.dist * sp,
+        z: this.target.z + this.dist * cp * Math.sin(this.yaw)
+      };
+    }
+    base() {
+      const e = this.eye();
+      let f = { x: this.target.x - e.x, y: this.target.y - e.y, z: this.target.z - e.z };
+      const fl = Math.hypot(f.x, f.y, f.z) || 1;
+      f = { x: f.x / fl, y: f.y / fl, z: f.z / fl };
+      const up = { x: 0, y: 1, z: 0 };
+      let r = {
+        x: f.y * up.z - f.z * up.y,
+        y: f.z * up.x - f.x * up.z,
+        z: f.x * up.y - f.y * up.x
+      };
+      const rl = Math.hypot(r.x, r.y, r.z) || 1;
+      r = { x: r.x / rl, y: r.y / rl, z: r.z / rl };
+      const u = {
+        x: r.y * f.z - r.z * f.y,
+        y: r.z * f.x - r.x * f.z,
+        z: r.x * f.y - r.y * f.x
+      };
+      return { eye: e, f, r, u };
+    }
+    focal() { return (this.h / 2) / Math.tan((this.fov * Math.PI / 180) / 2); }
+    /* p → {x, y, s, d} en píxeles del viewBox; null si queda detrás de la cámara */
+    proyectar(p, B) {
+      B = B || this.base();
+      const vx = p.x - B.eye.x, vy = p.y - B.eye.y, vz = p.z - B.eye.z;
+      const zc = vx * B.f.x + vy * B.f.y + vz * B.f.z;
+      if (zc <= 0.35) return null;
+      const xc = vx * B.r.x + vy * B.r.y + vz * B.r.z;
+      const yc = vx * B.u.x + vy * B.u.y + vz * B.u.z;
+      const F = this.focal();
+      return { x: this.w / 2 + (xc / zc) * F, y: this.h / 2 - (yc / zc) * F, s: F / zc, d: zc };
+    }
+    /* Desplaza el objetivo en el plano de la pantalla (paneo) */
+    panear(dx, dy, B) {
+      B = B || this.base();
+      const k = (this.dist / this.focal()) * 1.0;
+      this.target.x += (-dx * B.r.x + dy * B.u.x) * k;
+      this.target.y += (-dx * B.r.y + dy * B.u.y) * k;
+      this.target.z += (-dx * B.r.z + dy * B.u.z) * k;
+      this.target.y = clamp(this.target.y, 0.4, 14);
+    }
+    orbitar(dYaw, dPitch) {
+      this.yaw += dYaw;
+      this.pitch = clamp(this.pitch + dPitch, 0.05, 1.42);
+    }
+    acercar(f) { this.dist = clamp(this.dist * f, this.minDist, this.maxDist); }
+    encuadrar(bounds, margen) {
+      const m = margen == null ? 1.16 : margen;
+      this.target = {
+        x: (bounds.minX + bounds.maxX) / 2,
+        y: clamp((bounds.minY + bounds.maxY) / 2, 0.8, 6),
+        z: (bounds.minZ + bounds.maxZ) / 2
+      };
+      const span = Math.max(
+        bounds.maxX - bounds.minX,
+        bounds.maxZ - bounds.minZ,
+        (bounds.maxY - bounds.minY) * 1.6,
+        6
+      ) + 3.2;
+      const F = this.focal();
+      this.dist = clamp((span * F) / (Math.min(this.w, this.h) * 1.35) * m + 4, this.minDist, this.maxDist);
+    }
+  }
+
+  /* --------------------------------------------------------------- renderer */
+  class Motor3D {
+    constructor(svg, opts) {
+      opts = opts || {};
+      this.svg = svg;
+      this.opts = opts;
+      this.cam = new Camara();
+      this.datos = { nodos: [], enlaces: [], zonas: [] };
+      this.porId = new Map();
+      this.enlacesDe = new Map();
+      this.sel = null;                  // { tipo, id }
+      this.hover = null;
+      this.hl = { nodos: new Set(), enlaces: new Set() };
+      this.trafico = true;
+      this.autorotar = false;
+      this.reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      this.paquetes = [];
+      this.flujo = null;
+      this._raf = 0;
+      this._ultimo = 0;
+      this._anim = null;
+      this._arrastre = null;
+      this._punt = new Map();
+      this._pinza = null;
+      this._suelo = null;
+      this.zonaSegura = { arriba: 0, abajo: 0, izq: 0, der: 0 };  // px reservados por el HUD
+
+      // Crea las capas de dibujo SIN destruir el <defs> del documento (gradientes y filtros).
+      const NS = "http://www.w3.org/2000/svg";
+      Array.from(svg.querySelectorAll("g[data-m3]")).forEach((g) => g.remove());
+      const capa = (nombre) => {
+        const g = document.createElementNS(NS, "g");
+        g.setAttribute("data-m3", nombre);
+        g.setAttribute("class", "m3-" + nombre);
+        svg.appendChild(g);
+        return g;
+      };
+      this.capas = {
+        suelo: capa("suelo"),
+        zonas: capa("zonas"),
+        enlaces: capa("enlaces"),
+        sombras: capa("sombras"),
+        nodos: capa("nodos"),
+        etiquetas: capa("etiquetas"),
+        paquetes: capa("paquetes")
+      };
+      this._medir();
+      this._eventos();
+      if (window.ResizeObserver) {
+        this._ro = new ResizeObserver(() => {
+          if (this._roPend) return;
+          this._roPend = requestAnimationFrame(() => {
+            this._roPend = 0;
+            if (!this._medir()) return;
+            if (this._auto) this.encuadrar(); else this.render();
+          });
+        });
+        this._ro.observe(svg);
+      }
+    }
+
+    _medir() {
+      const r = this.svg.getBoundingClientRect();
+      const w = Math.max(320, Math.round(r.width || 1200));
+      const h = Math.max(260, Math.round(r.height || 700));
+      const cambio = w !== this.cam.w || h !== this.cam.h;
+      this.cam.w = w;
+      this.cam.h = h;
+      this.svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      return cambio;
+    }
+
+    /* ---------------------------------------------------------- datos / estado */
+    setDatos(d) {
+      this.datos = {
+        nodos: (d.nodos || []).map((n) => ({ ...n })),
+        enlaces: (d.enlaces || []).map((l) => ({ ...l })),
+        zonas: (d.zonas || []).map((z) => ({ ...z }))
+      };
+      this.porId = new Map(this.datos.nodos.map((n) => [n.id, n]));
+      this.enlacesDe = new Map();
+      for (const l of this.datos.enlaces) {
+        if (!this.enlacesDe.has(l.a)) this.enlacesDe.set(l.a, []);
+        if (!this.enlacesDe.has(l.b)) this.enlacesDe.set(l.b, []);
+        this.enlacesDe.get(l.a).push(l);
+        this.enlacesDe.get(l.b).push(l);
+      }
+      this.hl = { nodos: new Set(), enlaces: new Set() };
+      return this;
+    }
+
+    pos(n) {
+      const h = n.h != null ? n.h : (ALTURA_TIPO[n.tipo] != null ? ALTURA_TIPO[n.tipo] : 1.2);
+      return { x: n.x || 0, y: h, z: n.z || 0 };
+    }
+
+    limites() {
+      const b = { minX: 1e9, maxX: -1e9, minY: 1e9, maxY: -1e9, minZ: 1e9, maxZ: -1e9 };
+      for (const n of this.datos.nodos) {
+        const p = this.pos(n);
+        b.minX = Math.min(b.minX, p.x); b.maxX = Math.max(b.maxX, p.x);
+        b.minY = Math.min(b.minY, 0); b.maxY = Math.max(b.maxY, p.y);
+        b.minZ = Math.min(b.minZ, p.z); b.maxZ = Math.max(b.maxZ, p.z);
+      }
+      if (b.minX > b.maxX) return { minX: -6, maxX: 6, minY: 0, maxY: 3, minZ: -6, maxZ: 6 };
+      return b;
+    }
+
+    /* Encuadre real en espacio de pantalla: mide la caja de todas las tarjetas y ajusta la distancia
+       hasta que quepan con margen; después centra el contenido en el lienzo. */
+    encuadrar(margen) {
+      const m = margen == null ? 1 : margen;
+      const cam = this.cam;
+      const b = this.limites();
+      cam.target = {
+        x: (b.minX + b.maxX) / 2,
+        y: clamp(b.maxY * 0.6, 0.9, 3),
+        z: (b.minZ + b.maxZ) / 2
+      };
+      const anclas = this.datos.nodos.map((n) => ({ p: this.pos(n), hw: 73, hh: 30 }));
+      const medir = () => {
+        const B = cam.base();
+        let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, ok = true;
+        const ref = cam.focal() / cam.dist;
+        for (const a of anclas) {
+          const q = cam.proyectar(a.p, B);
+          if (!q) { ok = false; break; }
+          const k = clamp(q.s / ref, 0.5, 1.35);
+          x0 = Math.min(x0, q.x - a.hw * k); x1 = Math.max(x1, q.x + a.hw * k);
+          y0 = Math.min(y0, q.y - a.hh * k); y1 = Math.max(y1, q.y + a.hh * k + 14);
+        }
+        return { ok, x0, x1, y0, y1 };
+      };
+      const z = this.zonaSegura || { arriba: 0, abajo: 0, izq: 0, der: 0 };
+      const utilW = Math.max(120, cam.w - (z.izq || 0) - (z.der || 0));
+      const utilH = Math.max(120, cam.h - (z.arriba || 0) - (z.abajo || 0));
+      for (let i = 0; i < 8; i++) {
+        const r = medir();
+        if (!r.ok) { cam.dist = clamp(cam.dist * 1.45, cam.minDist, cam.maxDist); continue; }
+        const fw = (utilW * 0.95) / Math.max(1, r.x1 - r.x0);
+        const fh = (utilH * 0.95) / Math.max(1, r.y1 - r.y0);
+        const f = Math.min(fw, fh) * m;
+        if (Math.abs(f - 1) < 0.025) break;
+        cam.dist = clamp(cam.dist / f, cam.minDist, cam.maxDist);
+      }
+      const r = medir();
+      if (r.ok) {
+        const cx = (z.izq || 0) + utilW / 2;
+        const cy = (z.arriba || 0) + utilH / 2;
+        cam.panear(-((r.x0 + r.x1) / 2 - cx), -((r.y0 + r.y1) / 2 - cy));
+      }
+      this._auto = true;
+      this.render();
+      return this;
+    }
+
+    irA(cam, ms) {
+      const destino = { target: { ...this.cam.target }, yaw: this.cam.yaw, pitch: this.cam.pitch, dist: this.cam.dist, ...cam };
+      if (this.reducir || !ms) {
+        Object.assign(this.cam, destino);
+        this.render();
+        return this;
+      }
+      const desde = { target: { ...this.cam.target }, yaw: this.cam.yaw, pitch: this.cam.pitch, dist: this.cam.dist };
+      this._anim = { desde, destino, t0: performance.now(), ms };
+      this._bucle();
+      return this;
+    }
+
+    preset(nombre) {
+      const p = {
+        iso: { yaw: -0.62, pitch: 0.55 },
+        frontal: { yaw: -0.06, pitch: 0.10 },
+        cenital: { yaw: -0.72, pitch: 1.30 },
+        lateral: { yaw: -1.57, pitch: 0.30 }
+      }[nombre];
+      if (p) this.irA(p, 620);
+      return this;
+    }
+
+    enfocar(id) {
+      const n = this.porId.get(id);
+      if (!n) return this;
+      const p = this.pos(n);
+      this.irA({ target: p, dist: clamp(this.cam.dist * 0.62, 8, 34) }, 560);
+      return this;
+    }
+
+    seleccionar(tipo, id) { this.sel = id ? { tipo, id } : null; this.render(); return this; }
+
+    resaltar(nodos, enlaces) {
+      this.hl = {
+        nodos: new Set(nodos || []),
+        enlaces: new Set(enlaces || [])
+      };
+      this.render();
+      return this;
+    }
+
+    /* Flujo animado por una secuencia de nodos [a,b,c,…] */
+    setFlujo(ids, opciones) {
+      opciones = opciones || {};
+      const segs = [];
+      for (let i = 0; i < (ids || []).length - 1; i++) {
+        const A = this.porId.get(ids[i]), B = this.porId.get(ids[i + 1]);
+        if (A && B) segs.push({ a: this.pos(A), b: this.pos(B), ida: ids[i], idb: ids[i + 1] });
+      }
+      this.flujo = segs.length ? { segs, color: opciones.color || "#38bdf8", vel: opciones.velocidad || 1.5, etiqueta: opciones.etiqueta || "" } : null;
+      this.paquetes = [];
+      if (this.flujo) {
+        for (let i = 0; i < segs.length; i++) {
+          this.paquetes.push({ seg: i, u: -i * 0.42, color: this.flujo.color, r: 5 });
+        }
+      }
+      this._bucle();
+      return this;
+    }
+
+    limpiarFlujo() { this.flujo = null; this.paquetes = []; this.capas.paquetes.innerHTML = ""; return this; }
+
+    setTrafico(on) { this.trafico = !!on; return this; }
+    setAutorotar(on) { this.autorotar = !!on; if (on) this._bucle(); return this; }
+
+    /* ------------------------------------------------------------------ render */
+    render() {
+      if (!this.capas) return this;
+      const B = this.cam.base();
+      const cam = this.cam;
+      this._suelo = this._renderSuelo(B);
+      this.capas.suelo.innerHTML = this._suelo;
+      this.capas.zonas.innerHTML = this._renderZonas(B);
+
+      const piezas = [];
+      const nodosP = new Map();
+
+      for (const n of this.datos.nodos) {
+        const p = cam.proyectar(this.pos(n), B);
+        if (!p) continue;
+        nodosP.set(n.id, p);
+        piezas.push({ d: p.d, tipo: "nodo", n, p });
+      }
+      for (const l of this.datos.enlaces) {
+        const A = nodosP.get(l.a), Bp = nodosP.get(l.b);
+        if (!A || !Bp) continue;
+        piezas.push({ d: (A.d + Bp.d) / 2 + 0.001, tipo: "enlace", l, A, Bp });
+      }
+      piezas.sort((x, y) => y.d - x.d);
+
+      const enlacesSvg = [], nodosSvg = [], sombrasSvg = [], etiquetasSvg = [];
+      const kRef = cam.focal() / Math.max(8, cam.dist);
+
+      /* Colocación de tarjetas en espacio de pantalla: las más cercanas se quedan en su anclaje y las
+         demás se desplazan en vertical para no taparse. Cada tarjeta desplazada recibe una línea guía. */
+      const cercaPrimero = piezas.filter((q) => q.tipo === "nodo").sort((a, b) => a.d - b.d);
+      const ocupados = [];
+      const plaza = new Map();
+      for (const q of cercaPrimero) {
+        const k = this._escala(q.p, kRef, q.n);
+        const w = 148 * k, h = 58 * k;
+        const sitio = this._colocar(q.p.x, q.p.y, w, h, ocupados);
+        ocupados.push(sitio.rect);
+        plaza.set(q.n.id, { x: q.p.x + sitio.dx, y: q.p.y + sitio.dy, k, dx: sitio.dx, dy: sitio.dy });
+      }
+
+      for (const pieza of piezas) {
+        if (pieza.tipo === "enlace") {
+          const r = this._renderEnlace(pieza, kRef);
+          if (r && r.out) { enlacesSvg.push(r.out); if (r.etiqueta) etiquetasSvg.push(r.etiqueta); }
+        } else {
+          const s = this._renderNodo(pieza, kRef, B, plaza.get(pieza.n.id));
+          if (s) { nodosSvg.push(s.nodo); if (s.sombra) sombrasSvg.push(s.sombra); if (s.etiqueta) etiquetasSvg.push(s.etiqueta); }
+        }
+      }
+
+      this.capas.enlaces.innerHTML = enlacesSvg.join("");
+      this.capas.sombras.innerHTML = sombrasSvg.join("");
+      this.capas.nodos.innerHTML = nodosSvg.join("");
+      this.capas.etiquetas.innerHTML = etiquetasSvg.join("");
+      this._k = kRef;
+      this._pantalla = nodosP;
+      return this;
+    }
+
+    _colorNodo(n) {
+      return n.color || (n.estado === "falla" ? "#f43f5e" : "#64748b");
+    }
+
+    _renderSuelo(B) {
+      const cam = this.cam;
+      const lim = this.limites();
+      const pad = 9;
+      const x0 = Math.floor((lim.minX - pad) / 2) * 2;
+      const x1 = Math.ceil((lim.maxX + pad) / 2) * 2;
+      const z0 = Math.floor((lim.minZ - pad) / 2) * 2;
+      const z1 = Math.ceil((lim.maxZ + pad) / 2) * 2;
+      const paso = Math.max(2, Math.round((x1 - x0) / 16));
+      let out = "";
+      const seg = (a, b, fuerte) => {
+        const pa = cam.proyectar(a, B), pb = cam.proyectar(b, B);
+        if (!pa || !pb) return "";
+        const d = (pa.d + pb.d) / 2;
+        const op = clamp(0.36 - d / 165, 0.05, 0.36) * (fuerte ? 1.8 : 1);
+        return `<line x1="${num(pa.x)}" y1="${num(pa.y)}" x2="${num(pb.x)}" y2="${num(pb.y)}" stroke="currentColor" stroke-width="${fuerte ? 1.1 : 0.7}" stroke-opacity="${num(op)}"/>`;
+      };
+      for (let x = x0; x <= x1; x += paso) out += seg({ x, y: 0, z: z0 }, { x, y: 0, z: z1 }, x === 0);
+      for (let z = z0; z <= z1; z += paso) out += seg({ x: x0, y: 0, z }, { x: x1, y: 0, z }, z === 0);
+      const c = cam.proyectar({ x: (x0 + x1) / 2, y: 0, z: (z0 + z1) / 2 }, B);
+      if (c) {
+        out = `<ellipse cx="${num(c.x)}" cy="${num(c.y)}" rx="${num((x1 - x0) * c.s * 0.68)}" ry="${num((z1 - z0) * c.s * 0.34)}" fill="url(#gHalos)" opacity="0.85"/>` + out;
+      }
+      return out;
+    }
+
+    _renderZonas(B) {
+      if (!this.datos.zonas.length) return "";
+      const cam = this.cam;
+      let out = "";
+      for (const z of this.datos.zonas) {
+        const pts = [
+          { x: z.x0, y: 0.01, z: z.z0 }, { x: z.x1, y: 0.01, z: z.z0 },
+          { x: z.x1, y: 0.01, z: z.z1 }, { x: z.x0, y: 0.01, z: z.z1 }
+        ].map((p) => cam.proyectar(p, B)).filter(Boolean);
+        if (pts.length < 4) continue;
+        const d = pts.reduce((s, p) => s + p.d, 0) / pts.length;
+        const op = clamp(0.26 - d / 240, 0.05, 0.26);
+        out += `<polygon points="${pts.map((p) => `${num(p.x)},${num(p.y)}`).join(" ")}" fill="${z.color || "#38bdf8"}" fill-opacity="${num(op)}" stroke="${z.color || "#38bdf8"}" stroke-opacity="${num(op * 1.9)}" stroke-width="1" stroke-dasharray="6 5" rx="10"/>`;
+        const lab = cam.proyectar({ x: z.x0 + 0.45, y: 0.02, z: z.z0 + 0.45 }, B);
+        if (lab && z.nombre) {
+          const txt = String(z.nombre).toUpperCase();
+          const ancho = Math.min(230, txt.length * 6.6 + 16);
+          const opTxt = clamp(op * 4.4, 0.4, 0.96);
+          out += `<g opacity="${num(opTxt)}">
+            <rect x="${num(lab.x - 4)}" y="${num(lab.y - 15)}" width="${num(ancho)}" height="17" rx="8.5" fill="${z.color || "#38bdf8"}" fill-opacity="0.10" stroke="${z.color || "#38bdf8"}" stroke-opacity="0.35"/>
+            <text x="${num(lab.x + 5)}" y="${num(lab.y - 3)}" class="m3-zona-txt">${esc(txt)}</text>
+          </g>`;
+        }
+      }
+      return out;
+    }
+
+    _arco(A, B, p) {
+      const n = Math.max(8, Math.round(Math.hypot(B.x - A.x, B.z - A.z) * 2));
+      const pts = [];
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const sag = Math.sin(Math.PI * t) * 0.55;
+        pts.push(p({ x: lerp(A.x, B.x, t), y: lerp(A.y, B.y, t) + sag, z: lerp(A.z, B.z, t) }));
+      }
+      return pts;
+    }
+
+    _renderEnlace(pieza, kRef) {
+      const l = pieza.l, A = pieza.A, Bp = pieza.Bp;
+      const cam = this.cam, cb = cam.base();
+      const sel = this.sel && this.sel.tipo === "enlace" && this.sel.id === l.id;
+      const hov = this.hover && this.hover.tipo === "enlace" && this.hover.id === l.id;
+      const hl = this.hl.enlaces.has(l.id) || this.hl.nodos.has(l.a) || this.hl.nodos.has(l.b);
+      const color = l.color || "#64748b";
+      const k = clamp(((A.s + Bp.s) / 2) / kRef, 0.4, 1.5);
+      const ancho = clamp((l.grosor || 3.2) * k, 1.1, 8);
+      const d = (A.d + Bp.d) / 2;
+      const niebla = clamp(1 - (d - 8) / 90, 0.34, 1);
+      const fromNodo = this.porId.get(l.a), toNodo = this.porId.get(l.b);
+      const pa = cam.proyectar(this.pos(fromNodo), cb), pb = cam.proyectar(this.pos(toNodo), cb);
+      const pts = this._arco(this.pos(fromNodo), this.pos(toNodo), (p) => cam.proyectar(p, cb)).filter(Boolean);
+      if (pts.length < 2) return "";
+      const path = pts.map((p, i) => `${i ? "L" : "M"}${num(p.x)},${num(p.y)}`).join(" ");
+      const activo = sel || hov || hl;
+      const op = activo ? 0.98 : 0.68 * niebla;
+      const dash = l.tipo === "wifi" ? ` stroke-dasharray="2 ${num(7 * k)}"` : (l.tipo === "wan" ? ` stroke-dasharray="${num(14 * k)} ${num(6 * k)}"` : "");
+      let out = "";
+      if (activo) {
+        out += `<path d="${path}" fill="none" stroke="${color}" stroke-width="${num(ancho * 3.4)}" stroke-opacity="0.16" stroke-linecap="round" filter="url(#fGlow)"/>`;
+      }
+      out += `<path d="${path}" fill="none" stroke="${color}" stroke-width="${num(ancho)}" stroke-opacity="${num(op)}" stroke-linecap="round"${dash}/>`;
+      if (l.protocolos && l.protocolos.length && (sel || hov)) {
+        out += `<path d="${path}" fill="none" stroke="#f8fafc" stroke-width="${num(ancho * 0.34)}" stroke-opacity="0.5" stroke-dasharray="${num(2 * k)} ${num(5 * k)}"/>`;
+      }
+      out += `<path class="m3-hit" d="${path}" fill="none" stroke="transparent" pointer-events="stroke" stroke-width="${num(Math.max(16, ancho * 5))}" data-enlace="${esc(l.id)}" data-tipo="enlace"/>`;
+      let etiqueta = "";
+      if (l.rotulo && (sel || hov || (this.hl.enlaces.has(l.id)))) {
+        const m = pts[Math.floor(pts.length / 2)];
+        const w = Math.max(52, String(l.rotulo).length * 6.4 + 18);
+        etiqueta = `<g class="m3-etq" transform="translate(${num(m.x)},${num(m.y)})">
+          <rect x="${num(-w / 2)}" y="-11" width="${num(w)}" height="22" rx="11" fill="var(--panel-2)" stroke="${color}" stroke-opacity="0.65"/>
+          <text x="0" y="4" text-anchor="middle" class="m3-etq-txt">${esc(l.rotulo)}</text></g>`;
+      }
+      return { out, etiqueta };
+    }
+
+    _escala(p, kRef, n) {
+      return clamp(p.s / kRef, 0.5, 1.3) * ((n && n.escala) || 1);
+    }
+
+    /* Busca el primer hueco libre alrededor del anclaje (evita tarjetas superpuestas). */
+    _colocar(x, y, w, h, ocupados) {
+      const sep = 5;
+      const libre = (dx, dy) => {
+        const r = { x0: x + dx - w / 2, y0: y + dy - h / 2, x1: x + dx + w / 2, y1: y + dy + h / 2 };
+        const choca = ocupados.some((o) => !(r.x1 < o.x0 - sep || r.x0 > o.x1 + sep || r.y1 < o.y0 - sep || r.y0 > o.y1 + sep));
+        return choca ? null : r;
+      };
+      const pY = h * 0.62, pX = w * 0.5;
+      const opciones = [[0, 0]];
+      for (let i = 1; i <= 9; i++) {
+        opciones.push([0, -pY * i], [0, pY * i], [-pX * i * 0.8, -pY * i], [pX * i * 0.8, pY * i],
+          [-pX * i * 1.5, 0], [pX * i * 1.5, 0]);
+      }
+      const w2 = (w || 0) / 2, h2 = (h || 0) / 2;
+      for (const [dx0, dy0] of opciones) {
+        const dx = clamp(dx0, -x + w2 + 6, this.cam.w - x - w2 - 6);
+        const dy = clamp(dy0, -y + h2 + 6, this.cam.h - y - h2 - 6);
+        const r = libre(dx, dy);
+        if (r) return { dx, dy, rect: r };
+      }
+      return { dx: 0, dy: 0, rect: { x0: x - w / 2, y0: y - h / 2, x1: x + w / 2, y1: y + h / 2 } };
+    }
+
+    _renderNodo(pieza, kRef, B, plaza) {
+      const n = pieza.n, p = pieza.p, cam = this.cam;
+      const sel = this.sel && this.sel.tipo === "nodo" && this.sel.id === n.id;
+      const hov = this.hover && this.hover.tipo === "nodo" && this.hover.id === n.id;
+      const hl = this.hl.nodos.has(n.id);
+      const color = this._colorNodo(n);
+      const k = plaza ? plaza.k : this._escala(p, kRef, n);
+      const cx = plaza ? plaza.x : p.x, cy = plaza ? plaza.y : p.y;
+      const dx = cx - p.x, dy = cy - p.y;
+      const W = 148, H = 58;
+      const d = p.d;
+      const niebla = clamp(1 - (d - 8) / 110, 0.46, 1);
+      const op = niebla * (sel || hov || hl ? 1 : 0.94);
+      const suelo = cam.proyectar({ x: n.x || 0, y: 0, z: n.z || 0 }, B);
+      const lineas = this._partir(n.nombre || n.id, 16).slice(0, 2);
+      const sub = n.sub || "";
+      const icono = ICONOS[n.tipo] || ICONOS.desconocido;
+      let sombra = "";
+      if (suelo) {
+        const ks = clamp(suelo.s / kRef, 0.3, 1.6);
+        sombra = `<ellipse cx="${num(suelo.x)}" cy="${num(suelo.y)}" rx="${num(34 * ks)}" ry="${num(11 * ks)}" fill="url(#gSombra)" opacity="${num(0.5 * niebla)}"/>`;
+        sombra += `<line x1="${num(suelo.x)}" y1="${num(suelo.y)}" x2="${num(p.x)}" y2="${num(p.y + H * k * 0.46)}" stroke="${color}" stroke-opacity="${num(0.26 * niebla)}" stroke-width="1" stroke-dasharray="3 4"/>`;
+      }
+      const clase = `m3-n${sel ? " sel" : ""}${hov ? " hov" : ""}${hl ? " hl" : ""}`;
+      const xTxt = -W / 2 + 44;
+      const yNombre = lineas.length > 1 ? -7 : -1;
+      const ySub = lineas.length > 1 ? 19 : 15;
+      const guia = Math.hypot(dx, dy) > 2.5
+        ? `<line x1="${num(p.x)}" y1="${num(p.y)}" x2="${num(cx)}" y2="${num(cy)}" stroke="${color}" stroke-opacity="${num(0.4 * niebla)}" stroke-width="1" stroke-dasharray="2 3"/>
+           <circle cx="${num(p.x)}" cy="${num(p.y)}" r="2.2" fill="${color}" fill-opacity="${num(0.8 * niebla)}"/>`
+        : "";
+      const nodo = `${guia}<g class="${clase}" data-nodo="${esc(n.id)}" data-tipo="nodo" transform="translate(${num(cx)},${num(cy)}) scale(${num(k)})" opacity="${num(op)}">
+        <rect class="m3-cartel" x="${-W / 2}" y="${-H / 2}" width="${W}" height="${H}" rx="13" fill="url(#gCartel)"/>
+        <rect x="${-W / 2}" y="${-H / 2}" width="${W}" height="${H}" rx="13" fill="none" stroke="${color}" stroke-opacity="${sel ? 0.95 : (hov ? 0.8 : 0.42)}" stroke-width="${sel ? 2 : 1.2}"/>
+        <rect x="${-W / 2 + 0.5}" y="${-H / 2 + 9}" width="3" height="${H - 18}" rx="1.5" fill="${color}"/>
+        <g transform="translate(${-W / 2 + 25},0) scale(0.40)" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${icono}</g>
+        <text class="m3-nombre" x="${xTxt}" y="${yNombre}">${lineas.map((t, i) => `<tspan x="${xTxt}" dy="${i ? 12 : 0}">${esc(t)}</tspan>`).join("")}</text>
+        <text class="m3-sub" x="${xTxt}" y="${ySub}">${esc(this._corto(sub, 21))}</text>
+        <circle class="m3-led" cx="${W / 2 - 11}" cy="${-H / 2 + 11}" r="3.2" fill="${n.estadoColor || color}"/>
+        ${sel ? `<rect x="${-W / 2 - 5}" y="${-H / 2 - 5}" width="${W + 10}" height="${H + 10}" rx="17" fill="none" stroke="${color}" stroke-opacity="0.5" stroke-width="1.4" stroke-dasharray="7 5"/>` : ""}
+      </g>`;
+      let etiqueta = "";
+      if (n.etiqueta && (sel || hov)) {
+        const w = Math.max(46, String(n.etiqueta).length * 5.6 + 16);
+        etiqueta = `<g class="m3-etq" transform="translate(${num(cx)},${num(cy - H * k * 0.5 - 13)})">
+          <rect x="${num(-w / 2)}" y="-10" width="${num(w)}" height="20" rx="10" fill="var(--panel-2)" stroke="${color}" stroke-opacity="0.7"/>
+          <text x="0" y="4" text-anchor="middle" class="m3-etq-txt">${esc(n.etiqueta)}</text></g>`;
+      }
+      return { nodo, sombra, etiqueta };
+    }
+
+    _partir(texto, max) {
+      const palabras = String(texto).split(/\s+/).filter(Boolean);
+      const lineas = [];
+      let act = "";
+      for (const w of palabras) {
+        if ((act + " " + w).trim().length <= max) act = (act + " " + w).trim();
+        else { if (act) lineas.push(act); act = w; }
+      }
+      if (act) lineas.push(act);
+      return lineas.length ? lineas : [""];
+    }
+    _corto(s, max) { s = String(s || ""); return s.length > max ? s.slice(0, max - 1) + "…" : s; }
+
+    /* --------------------------------------------------------------- animación */
+    _bucle() {
+      if (this._raf) return;
+      const paso = (t) => {
+        this._raf = requestAnimationFrame(paso);
+        const dt = this._ultimo ? Math.min(0.05, (t - this._ultimo) / 1000) : 0.016;
+        this._ultimo = t;
+        let pintar = false;
+        if (this._anim) {
+          const a = this._anim;
+          const u = clamp((t - a.t0) / a.ms, 0, 1), e = ease(u);
+          this.cam.target = {
+            x: lerp(a.desde.target.x, a.destino.target.x, e),
+            y: lerp(a.desde.target.y, a.destino.target.y, e),
+            z: lerp(a.desde.target.z, a.destino.target.z, e)
+          };
+          this.cam.yaw = lerp(a.desde.yaw, a.destino.yaw, e);
+          this.cam.pitch = lerp(a.desde.pitch, a.destino.pitch, e);
+          this.cam.dist = lerp(a.desde.dist, a.destino.dist, e);
+          pintar = true;
+          if (u >= 1) { this._anim = null; this.render(); }
+        }
+        if (this.autorotar && !this._arrastre && !this._anim) {
+          this.cam.yaw += dt * 0.16;
+          pintar = true;
+        }
+        if (pintar) this.render();
+        this._animarPaquetes(dt);
+        if (!this._anim && !this.autorotar && !this.flujo && !this.trafico) {
+          cancelAnimationFrame(this._raf);
+          this._raf = 0;
+          this._ultimo = 0;
+        }
+      };
+      this._raf = requestAnimationFrame(paso);
+    }
+
+    _animarPaquetes(dt) {
+      const cam = this.cam, B = cam.base();
+      let svg = "";
+      if (this.trafico && !this.flujo && this.datos.enlaces.length) {
+        for (const l of this.datos.enlaces) {
+          if (!l.traficoAmbiente) continue;
+          const A = this.porId.get(l.a), Bn = this.porId.get(l.b);
+          if (!A || !Bn) continue;
+          const u = ((performance.now() / 1000) * 0.22 + (l.fase || 0)) % 1;
+          const p = { x: lerp(A.x, Bn.x, u), y: lerp(this.pos(A).y, this.pos(Bn).y, u) + Math.sin(Math.PI * u) * 0.5, z: lerp(A.z, Bn.z, u) };
+          const pr = cam.proyectar(p, B);
+          if (pr) svg += `<circle cx="${num(pr.x)}" cy="${num(pr.y)}" r="${num(clamp(2.6 * pr.s / (this._k || 20), 1.4, 4))}" fill="#7dd3fc" opacity="0.75"/>`;
+        }
+      }
+      if (this.flujo) {
+        const F = this.flujo;
+        for (const q of this.paquetes) {
+          q.u += dt * F.vel;
+          if (q.u > 1) q.u -= 1 + 0.35;
+          if (q.u < -0.4) q.u = 1;
+          if (q.u < 0) continue;
+          const s = F.segs[q.seg];
+          if (!s) continue;
+          for (let tr = 0; tr < 4; tr++) {
+            const uu = q.u - tr * 0.055;
+            if (uu < 0) break;
+            const p = { x: lerp(s.a.x, s.b.x, uu), y: lerp(s.a.y, s.b.y, uu) + Math.sin(Math.PI * uu) * 0.55, z: lerp(s.a.z, s.b.z, uu) };
+            const pr = cam.proyectar(p, B);
+            if (!pr) continue;
+            const r = clamp((q.r - tr * 1.1) * pr.s / (this._k || 20), 0.8, 6);
+            svg += `<circle cx="${num(pr.x)}" cy="${num(pr.y)}" r="${num(Math.max(0.8, r))}" fill="${q.color}" opacity="${num(0.9 - tr * 0.2)}"/>`;
+          }
+        }
+      }
+      this.capas.paquetes.innerHTML = svg;
+    }
+
+    /* --------------------------------------------------------------- eventos */
+    _eventos() {
+      const svg = this.svg;
+      const punto = (ev) => {
+        const r = svg.getBoundingClientRect();
+        return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+      };
+      const objetivo = (ev) => {
+        const el = ev.target.closest ? ev.target.closest("[data-nodo],[data-enlace]") : null;
+        if (!el) return null;
+        if (el.dataset.nodo) return { tipo: "nodo", id: el.dataset.nodo };
+        return { tipo: "enlace", id: el.dataset.enlace };
+      };
+
+      svg.addEventListener("pointerdown", (ev) => {
+        this._auto = false;
+        svg.setPointerCapture && svg.setPointerCapture(ev.pointerId);
+        this._punt.set(ev.pointerId, punto(ev));
+        if (this._punt.size === 2) {
+          const v = Array.from(this._punt.values());
+          this._pinza = { d: Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y), dist: this.cam.dist };
+          return;
+        }
+        this._arrastre = {
+          x0: ev.clientX, y0: ev.clientY, movido: false,
+          pan: ev.shiftKey || ev.button === 1, obj: objetivo(ev)
+        };
+        svg.classList.add("arrastrando");
+      });
+
+      svg.addEventListener("pointermove", (ev) => {
+        if (this._punt.has(ev.pointerId)) this._punt.set(ev.pointerId, punto(ev));
+        if (this._pinza && this._punt.size >= 2) {
+          const v = Array.from(this._punt.values());
+          const d = Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y);
+          if (d > 4) { this.cam.dist = clamp(this._pinza.dist * (this._pinza.d / d), this.cam.minDist, this.cam.maxDist); this.render(); }
+          return;
+        }
+        const a = this._arrastre;
+        if (a) {
+          const dx = ev.clientX - a.x0, dy = ev.clientY - a.y0;
+          if (Math.abs(dx) + Math.abs(dy) > 3) a.movido = true;
+          if (a.movido) {
+            if (a.pan) this.cam.panear(dx, dy);
+            else this.cam.orbitar(-dx * 0.0062, dy * 0.0052);
+            a.x0 = ev.clientX; a.y0 = ev.clientY;
+            this.render();
+          }
+          return;
+        }
+        const obj = objetivo(ev);
+        const igual = (x, y) => (x ? x.id === y.id && x.tipo === y.tipo : !y);
+        if (!igual(obj, this.hover)) {
+          this.hover = obj;
+          this.render();
+          if (this.opts.onHover) this.opts.onHover(obj);
+        }
+        svg.style.cursor = obj ? "pointer" : (a && a.pan ? "grabbing" : "grab");
+      });
+
+      const soltar = (ev) => {
+        this._punt.delete(ev.pointerId);
+        if (this._punt.size < 2) this._pinza = null;
+        const a = this._arrastre;
+        this._arrastre = null;
+        svg.classList.remove("arrastrando");
+        if (!a) return;
+        if (!a.movido) {
+          // Con captura de puntero el destino del pointerup es el propio SVG: usamos el objetivo del pointerdown.
+          const obj = a.obj || objetivo(ev);
+          this.sel = obj;
+          this.render();
+          if (this.opts.onPick) this.opts.onPick(obj);
+        }
+      };
+      svg.addEventListener("pointerup", soltar);
+      svg.addEventListener("pointercancel", soltar);
+      svg.addEventListener("pointerleave", () => {
+        if (this.hover) { this.hover = null; this.render(); if (this.opts.onHover) this.opts.onHover(null); }
+      });
+      svg.addEventListener("dblclick", (ev) => {
+        const obj = objetivo(ev);
+        if (obj && obj.tipo === "nodo") this.enfocar(obj.id);
+      });
+      svg.addEventListener("wheel", (ev) => {
+        ev.preventDefault();
+        this.cam.acercar(Math.exp(ev.deltaY * 0.0013));
+        this.render();
+      }, { passive: false });
+      svg.addEventListener("contextmenu", (ev) => ev.preventDefault());
+
+      window.addEventListener("keydown", (ev) => {
+        const dentro = document.activeElement === document.body || svg.contains(document.activeElement);
+        if (!dentro || this.opts.sinTeclado) return;
+        const k = ev.key;
+        if (k === "ArrowLeft") { this.cam.orbitar(-0.1, 0); this.render(); }
+        else if (k === "ArrowRight") { this.cam.orbitar(0.1, 0); this.render(); }
+        else if (k === "ArrowUp") { this.cam.orbitar(0, -0.07); this.render(); }
+        else if (k === "ArrowDown") { this.cam.orbitar(0, 0.07); this.render(); }
+        else if (k === "+" || k === "=") { this.cam.acercar(0.9); this.render(); }
+        else if (k === "-") { this.cam.acercar(1.1); this.render(); }
+        else return;
+        ev.preventDefault();
+      });
+    }
+  }
+
+  R3.Motor3D = Motor3D;
+  R3.ICONOS = ICONOS;
+  R3.ALTURA_TIPO = ALTURA_TIPO;
+  R3.util = { clamp, lerp, ease, esc, num };
+  R3.ICONO_SVG = (tipo, attrs) =>
+    `<svg viewBox="-24 -24 48 48" ${attrs || 'aria-hidden="true" focusable="false"'} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONOS[tipo] || ICONOS.desconocido}</svg>`;
+})(window.R3 = window.R3 || {});
+</script>
+<script>/* =====================================================================================================
+   ui.js — Utilidades de interfaz compartidas (sin dependencias).
+   Tema persistente, toasts, pestañas accesibles, descargas y helpers de DOM.
+   ===================================================================================================== */
+(function (R3) {
+  "use strict";
+
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = R3.util.esc;
+
+  /* ------------------------------------------------------------------- tema */
+  const CLAVE_TEMA = "r3:tema";
+  function aplicarTema(t) {
+    document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+    const b = $("#btn-tema");
+    if (b) {
+      b.setAttribute("aria-pressed", t === "light" ? "true" : "false");
+      b.title = t === "light" ? "Cambiar a modo oscuro" : "Cambiar a modo claro";
+    }
+    try { localStorage.setItem(CLAVE_TEMA, t); } catch (e) { /* modo privado */ }
+  }
+  function temaInicial() {
+    let t = null;
+    try { t = localStorage.getItem(CLAVE_TEMA); } catch (e) {}
+    if (!t) t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    return t;
+  }
+  function alternarTema() {
+    aplicarTema(document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light");
+  }
+
+  /* ------------------------------------------------------------------ toasts */
+  function toast(msg, ms) {
+    let c = $(".toasts");
+    if (!c) { c = document.createElement("div"); c.className = "toasts"; document.body.appendChild(c); }
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.textContent = msg;
+    c.appendChild(el);
+    setTimeout(() => { el.style.opacity = "0"; el.style.transform = "translateY(6px)"; el.style.transition = "all 200ms"; }, (ms || 2600) - 200);
+    setTimeout(() => el.remove(), ms || 2600);
+  }
+
+  /* ----------------------------------------------------------------- pestañas */
+  function pestañas(contenedor, alCambiar) {
+    const tabs = $$("[role=tab]", contenedor);
+    const activar = (id) => {
+      tabs.forEach((t) => {
+        const on = t.id === id;
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        t.tabIndex = on ? 0 : -1;
+        const panel = document.getElementById(t.getAttribute("aria-controls"));
+        if (panel) panel.hidden = !on;
+      });
+      if (alCambiar) alCambiar(id.replace("tab-", ""));
+    };
+    tabs.forEach((t) => {
+      t.addEventListener("click", () => activar(t.id));
+      t.addEventListener("keydown", (ev) => {
+        const i = tabs.indexOf(t);
+        if (ev.key === "ArrowRight") { ev.preventDefault(); const n = tabs[(i + 1) % tabs.length]; n.focus(); activar(n.id); }
+        if (ev.key === "ArrowLeft") { ev.preventDefault(); const n = tabs[(i - 1 + tabs.length) % tabs.length]; n.focus(); activar(n.id); }
+      });
+    });
+    const ini = tabs.find((t) => t.getAttribute("aria-selected") === "true") || tabs[0];
+    if (ini) activar(ini.id);
+    return { activar };
+  }
+
+  /* ----------------------------------------------------------------- descargas */
+  function descargar(nombre, contenido, tipo) {
+    const blob = contenido instanceof Blob ? contenido : new Blob([contenido], { type: tipo || "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  function bytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+    return (n / 1048576).toFixed(1) + " MB";
+  }
+
+  /* Filas de ficha a partir de pares [etiqueta, valor] */
+  function ficha(pares) {
+    return `<dl class="ficha">${pares.filter((p) => p && p[1] != null && p[1] !== "")
+      .map(([k, v]) => `<div><dt class="k">${esc(k)}</dt><dd class="v">${v}</dd></div>`).join("")}</dl>`;
+  }
+
+  function icono(tipo) { return R3.ICONO_SVG(tipo); }
+
+  /* Exporta la escena actual como JSON descargable (autogestión sin backend) */
+  function exportarJSON(nombre, objeto) {
+    descargar(nombre, JSON.stringify(objeto, null, 2), "application/json");
+    toast("Escena exportada: " + nombre);
+  }
+
+  R3.UI = { $, $$, esc, aplicarTema, temaInicial, alternarTema, toast, pestañas, descargar, bytes, ficha, icono, exportarJSON };
+  R3.$ = $; R3.$$ = $$;
+})(window.R3 = window.R3 || {});
+</script>
+<script>/* =====================================================================================================
+   ingesta.js — Convierte insumos reales en un escenario 3D, sin backend y sin dependencias.
+
+   Entradas admitidas
+     · .drawio / .xml  → topología (XML plano o comprimido en base64+deflate)
+     · .docx           → texto (ZIP + word/document.xml)
+     · .pdf            → texto (streams FlateDecode + mapas ToUnicode)
+     · .txt .md .csv .json → texto; el JSON con {nodos, enlaces} se importa como escenario
+     · imágenes        → evidencia visual adjunta a los nodos
+
+   Contrato de salida (lo que consume la aplicación)
+     { fuentes[], escenas[], documentos[], inventario{}, avisos[] }
+   ===================================================================================================== */
+(function (R3) {
+  "use strict";
+
+  const Codec = R3.Codec;
+  const decodificadorUTF8 = new TextDecoder("utf-8", { fatal: false });
+  const texto = (bytes) => decodificadorUTF8.decode(bytes);
+  const latin1 = (bytes) => {
+    let s = "";
+    const trozo = 8192;
+    for (let i = 0; i < bytes.length; i += trozo) {
+      s += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(bytes.length, i + trozo)));
+    }
+    return s;
+  };
+
+  /* ---------------------------------------------------------------- entidades HTML */
+  const ENTIDADES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú", ntilde: "ñ", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", Ntilde: "Ñ", uuml: "ü", Uuml: "Ü", iexcl: "¡", iquest: "¿", ordm: "º", ordf: "ª", deg: "°", middot: "·", hellip: "…", ndash: "–", mdash: "—", ldquo: "“", rdquo: "”", laquo: "«", raquo: "»", rsquo: "’", lsquo: "‘" };
+  function decodificarEntidades(s) {
+    return String(s).replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (m, cuerpo) => {
+      if (cuerpo[0] === "#") {
+        const cp = cuerpo[1] === "x" || cuerpo[1] === "X" ? parseInt(cuerpo.slice(2), 16) : parseInt(cuerpo.slice(1), 10);
+        return Number.isFinite(cp) ? String.fromCodePoint(cp) : m;
+      }
+      return ENTIDADES[cuerpo] != null ? ENTIDADES[cuerpo] : m;
+    });
+  }
+  /* Etiquetas de drawio suelen traer HTML escapado: <b>Router</b><br>LAN */
+  function limpiarEtiqueta(s) {
+    if (!s) return "";
+    let t = decodificarEntidades(String(s));
+    t = t.replace(/<\s*br\s*\/?\s*>/gi, " ").replace(/<\s*\/\s*(div|p|li|tr|h[1-6])\s*>/gi, " ");
+    t = t.replace(/<[^>]+>/g, " ");
+    t = decodificarEntidades(t);
+    return t.replace(/\s+/g, " ").trim();
+  }
+  function atributos(cadena) {
+    const o = {};
+    const re = /([\w:.-]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
+    let m;
+    while ((m = re.exec(cadena))) o[m[1]] = m[3] != null ? m[3] : m[4];
+    return o;
+  }
+
+  /* ------------------------------------------------------- inferencia de tipo de nodo */
+  const REGLAS_TIPO = [
+    ["nube", /\b(nube|cloud|internet|wan|isp|proveedor)\b/i],
+    ["firewall", /\b(firewall|fortigate|pfsense|asa|utm|cortafuegos|per[ií]metro)\b/i],
+    ["router", /\b(router|enrutador|gateway|puerta de enlace|core|borde)\b/i],
+    ["switch", /\b(switch|conmutador|fortiswitch|bridge|uplink)\b/i],
+    ["servidor", /\b(server|servidor|dns|dhcp|web|nas|smtp|sql|base de datos|controlador)\b/i],
+    ["nvr", /\b(nvr|grabador|dvr)\b/i],
+    ["camara", /\b(c[aá]mara|camera|cctv|ipcam)\b/i],
+    ["ap", /\b(ap|access point|punto de acceso|wifi|wi-fi|fortiap)\b/i],
+    ["telefono", /\b(tel[eé]fono|phone|voip|ip phone|softphone)\b/i],
+    ["portatil", /\b(laptop|port[aá]til|notebook)\b/i],
+    ["pc", /\b(pc|desktop|escritorio|workstation|cliente|host)\b/i],
+    ["impresora", /\b(printer|impresora)\b/i]
+  ];
+  function tipoPorEtiqueta(etiqueta, estilo) {
+    const s = (etiqueta || "") + " " + (estilo || "");
+    for (const [tipo, re] of REGLAS_TIPO) if (re.test(s)) return tipo === "impresora" ? "pc" : tipo;
+    if (/shape=(ellipse|cloud)/i.test(estilo || "")) return "nube";
+    if (/shape=cylinder/i.test(estilo || "")) return "servidor";
+    if (/mxgraph\.cisco\.(router|workgroup_router)/i.test(estilo || "")) return "router";
+    if (/mxgraph\.cisco\.(switch|workgroup_switch)/i.test(estilo || "")) return "switch";
+    return "desconocido";
+  }
+  /* Primera IPv4 que aparezca en una etiqueta ("PC 10.10.10.21" → "10.10.10.21") */
+  function primeraIP(texto) {
+    const m = /\b(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}\b/.exec(String(texto || ""));
+    return m ? m[0] : "";
+  }
+
+  /* El color de acento de una forma es, casi siempre, su trazo; el relleno suele ser un fondo oscuro. */
+  function colorDeEstilo(estilo) {
+    const s = estilo || "";
+    const m = /strokeColor=#([0-9a-fA-F]{3,8})/.exec(s) || /fillColor=#([0-9a-fA-F]{3,8})/.exec(s);
+    if (!m) return null;
+    let c = m[1];
+    if (c.length === 3) c = c.split("").map((x) => x + x).join("");
+    if (c.length === 8) c = c.slice(0, 6);
+    if (c.length !== 6) return null;
+    return "#" + c.toLowerCase();
+  }
+
+  /* ------------------------------------------------------------------- .drawio */
+  function esXml(s) { return /^\s*<(\?xml|mxfile|mxGraphModel|diagram)/i.test(s); }
+
+  function descomprimirDrawio(b64) {
+    const bytes = Codec.base64ABytes(b64);
+    let xml;
+    try { xml = texto(Codec.inflateRaw(bytes)); }
+    catch (e) { xml = texto(Codec.inflateZlib(bytes)); }
+    xml = xml.trim();
+    if (xml.startsWith("%")) xml = decodeURIComponent(xml);   // formato antiguo (pako + escape)
+    return xml;
+  }
+
+  function celdasDeXml(xml) {
+    const etiquetasEnvoltorio = new Map();
+    const reUO = /<(UserObject|object)\b([^>]*)>/g;
+    let mu;
+    while ((mu = reUO.exec(xml))) {
+      const a = atributos(mu[2]);
+      if (a.id) etiquetasEnvoltorio.set(a.id, a.label || a.value || "");
+    }
+    const celdas = [];
+    const re = /<mxCell\b([^>]*?)(\/>|>([\s\S]*?)<\/mxCell>)/g;
+    let m;
+    while ((m = re.exec(xml))) {
+      const a = atributos(m[1]);
+      const cuerpo = m[3] || "";
+      const g = /<mxGeometry\b([^>]*?)\/?>/.exec(cuerpo);
+      const geo = g ? atributos(g[1]) : {};
+      const valor = limpiarEtiqueta(a.value || etiquetasEnvoltorio.get(a.id) || "");
+      celdas.push({
+        id: a.id || "",
+        padre: a.parent || "",
+        valor,
+        estilo: a.style || "",
+        esVertice: a.vertex === "1" || (!a.edge && g != null),
+        esEnlace: a.edge === "1" || (a.source != null && a.target != null),
+        origen: a.source || "",
+        destino: a.target || "",
+        x: parseFloat(geo.x || "0") || 0,
+        y: parseFloat(geo.y || "0") || 0,
+        ancho: parseFloat(geo.width || "0") || 0,
+        alto: parseFloat(geo.height || "0") || 0,
+        relativo: geo.relative === "1"
+      });
+    }
+    return celdas;
+  }
+
+  function grafoDeCeldas(celdas) {
+    const porId = new Map(celdas.map((c) => [c.id, c]));
+    const absoluta = (celda, visto) => {
+      visto = visto || new Set();
+      if (!celda || visto.has(celda.id)) return { x: celda ? celda.x : 0, y: celda ? celda.y : 0 };
+      visto.add(celda.id);
+      const padre = porId.get(celda.padre);
+      if (!padre || !padre.esVertice || padre.id === "0") return { x: celda.x, y: celda.y };
+      const pa = absoluta(padre, visto);
+      return { x: pa.x + celda.x, y: pa.y + celda.y };
+    };
+
+    const nodos = [], zonas = [], enlaces = [];
+    for (const c of celdas) {
+      if (!c.esVertice || c.id === "0" || c.id === "1") continue;
+      if (!c.valor && !(c.ancho > 60 && c.alto > 50)) continue;
+      const p = absoluta(c);
+      const hijos = celdas.filter((o) => o.padre === c.id && o.esVertice).length;
+      const esContenedor = /swimlane|group|container=1/i.test(c.estilo) || (c.ancho >= 300 && c.alto >= 180);
+      if (esContenedor || hijos >= 2) {
+        zonas.push({ id: c.id, nombre: c.valor || "Zona", x0: p.x, y0: p.y, x1: p.x + c.ancho, y1: p.y + c.alto, color: colorDeEstilo(c.estilo) || null });
+        // Un contenedor con contenido es un recinto: se dibuja como zona, no como dispositivo.
+        if (hijos >= 1 || !c.valor) continue;
+      }
+      nodos.push({
+        id: c.id,
+        etiqueta: c.valor || c.id,
+        tipo: tipoPorEtiqueta(c.valor, c.estilo),
+        x: p.x, y: p.y, ancho: c.ancho, alto: c.alto,
+        zona: zonas.find((z) => z.id === c.padre) ? c.padre : null,
+        ip: primeraIP(c.valor),
+        color: colorDeEstilo(c.estilo)
+      });
+    }
+    const idsNodo = new Set(nodos.map((n) => n.id));
+    for (const c of celdas) {
+      if (!c.esEnlace) continue;
+      if (!idsNodo.has(c.origen) || !idsNodo.has(c.destino)) continue;
+      if (c.origen === c.destino) continue;
+      enlaces.push({ id: c.id, a: c.origen, b: c.destino, etiqueta: c.valor, color: colorDeEstilo(c.estilo) });
+    }
+    return { nodos, enlaces, zonas };
+  }
+
+  function leerDrawio(datos, nombre) {
+    const crudo = typeof datos === "string" ? datos.trim() : texto(datos).trim();
+    const paginas = [];
+    if (!esXml(crudo)) {
+      paginas.push({ nombre: nombre || "Topología", ...grafoDeCeldas(celdasDeXml(descomprimirDrawio(crudo))) });
+      return paginas;
+    }
+    const bloques = crudo.match(/<diagram\b[\s\S]*?<\/diagram>/g);
+    if (!bloques) {
+      const modelo = /<mxGraphModel\b[\s\S]*?<\/mxGraphModel>/.exec(crudo);
+      if (!modelo) throw new Error("El archivo no contiene un diagrama de drawio reconocible");
+      paginas.push({ nombre: nombre || "Topología", ...grafoDeCeldas(celdasDeXml(modelo[0])) });
+      return paginas;
+    }
+    for (const bloque of bloques) {
+      const cabecera = atributos(/<diagram\b([^>]*)>/.exec(bloque)[1]);
+      const interior = bloque.replace(/^<diagram\b[^>]*>/, "").replace(/<\/diagram>$/, "").trim();
+      let xml;
+      if (/<mxGraphModel/i.test(interior)) xml = interior;
+      else { try { xml = descomprimirDrawio(interior); } catch (e) { continue; } }
+      paginas.push({ nombre: cabecera.name || nombre || "Página", ...grafoDeCeldas(celdasDeXml(xml)) });
+    }
+    return paginas;
+  }
+
+  /* --------------------------------------------------------------------- .docx */
+  function leerDocx(bytes) {
+    const zip = Codec.leerZip(bytes);
+    const partes = ["word/document.xml", "word/footnotes.xml", "word/endnotes.xml"];
+    let xml = "";
+    for (const p of partes) if (zip.has(p)) xml += texto(zip.get(p));
+    if (!xml) throw new Error("El .docx no contiene word/document.xml");
+    const parrafos = xml
+      .replace(/<w:tab\/>/g, "\t")
+      .replace(/<w:br\/>/g, "\n")
+      .split(/<\/w:p>/)
+      .map((p) => limpiarEtiqueta(p.replace(/<w:instrText[\s\S]*?<\/w:instrText>/g, " ")))
+      .filter((p) => p.length > 0);
+    return { texto: parrafos.join("\n"), parrafos: parrafos.length };
+  }
+
+  /* ---------------------------------------------------------------------- PDF */
+  function objetosPdf(lat) {
+    const objs = new Map();
+    const re = /(\d+)\s+(\d+)\s+obj\b/g;
+    let m;
+    while ((m = re.exec(lat))) {
+      const num = parseInt(m[1], 10);
+      const inicio = m.index + m[0].length;
+      let fin = lat.indexOf("endobj", inicio);
+      if (fin < 0) fin = lat.length;
+      const cuerpo = lat.slice(inicio, fin);
+      const idx = cuerpo.indexOf("stream");
+      let dict = cuerpo, sIni = -1, sFin = -1;
+      if (idx >= 0) {
+        dict = cuerpo.slice(0, idx);
+        let p = inicio + idx + 6;
+        if (lat[p] === "\r") p++;
+        if (lat[p] === "\n") p++;
+        const e = cuerpo.indexOf("endstream", idx);
+        sIni = p;
+        sFin = e < 0 ? fin : inicio + e;
+      }
+      objs.set(num, { dict, sIni, sFin, num });
+    }
+    return objs;
+  }
+
+  function flujoDe(objs, num, bytes) {
+    const o = objs.get(num);
+    if (!o || o.sIni < 0 || o.sFin <= o.sIni) return null;
+    const crudo = bytes.subarray(o.sIni, o.sFin);
+    if (/FlateDecode/.test(o.dict)) {
+      try { return Codec.inflateZlib(crudo); } catch (e) { try { return Codec.inflateRaw(crudo); } catch (e2) { return null; } }
+    }
+    return crudo;
+  }
+
+  function hexABytes(h) {
+    const limpio = String(h).replace(/[^0-9a-fA-F]/g, "");
+    const pares = limpio.length >> 1;
+    const out = new Uint8Array(pares);
+    for (let i = 0; i < pares; i++) out[i] = parseInt(limpio.substr(i * 2, 2), 16);
+    return out;
+  }
+  function codigoAtexto(bytes, desde, ancho) {
+    let s = "";
+    for (let i = desde; i + ancho <= bytes.length; i += ancho) {
+      const cp = ancho === 2 ? (bytes[i] << 8) | bytes[i + 1] : bytes[i];
+      s += String.fromCodePoint(cp);
+    }
+    return s;
+  }
+
+  function mapaToUnicode(txt) {
+    const mapa = new Map();
+    const bloquesChar = txt.match(/beginbfchar([\s\S]*?)endbfchar/g) || [];
+    for (const b of bloquesChar) {
+      const pares = b.match(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>/g) || [];
+      for (const p of pares) {
+        const m = /<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>/.exec(p);
+        mapa.set(parseInt(m[1], 16), codigoAtexto(hexABytes(m[2]), 0, 2));
+      }
+    }
+    const bloquesRango = txt.match(/beginbfrange([\s\S]*?)endbfrange/g) || [];
+    for (const b of bloquesRango) {
+      const filas = b.match(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*(<[0-9a-fA-F]+>|\[[^\]]*\])/g) || [];
+      for (const fila of filas) {
+        const m = /<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*(<[0-9a-fA-F]+>|\[[^\]]*\])/.exec(fila);
+        const lo = parseInt(m[1], 16), hi = parseInt(m[2], 16);
+        if (hi - lo > 65535) continue;
+        const dest = m[3];
+        if (dest.startsWith("[")) {
+          const items = dest.match(/<[0-9a-fA-F]+>/g) || [];
+          for (let i = 0; i <= hi - lo && i < items.length; i++) {
+            mapa.set(lo + i, codigoAtexto(hexABytes(items[i]), 0, 2));
+          }
+        } else {
+          const base = hexABytes(dest);
+          for (let i = 0; i <= hi - lo; i++) {
+            const copia = new Uint8Array(base);
+            const ultimo = copia.length - 1;
+            copia[ultimo] = (copia[ultimo] + i) & 0xff;
+            mapa.set(lo + i, codigoAtexto(copia, 0, copia.length > 1 ? 2 : 1));
+          }
+        }
+      }
+    }
+    return mapa;
+  }
+
+  function fuenteToUnicode(objs, num, bytes, cache) {
+    if (cache.has(num)) return cache.get(num);
+    const o = objs.get(num);
+    let mapa = null;
+    if (o) {
+      const m = /\/ToUnicode\s+(\d+)\s+0\s+R/.exec(o.dict);
+      if (m) {
+        const flujo = flujoDe(objs, parseInt(m[1], 10), bytes);
+        if (flujo) mapa = mapaToUnicode(latin1(flujo));
+      }
+    }
+    cache.set(num, mapa);
+    return mapa;
+  }
+
+  function decodificarLiteral(s) {
+    const out = [];
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (c === "\\") {
+        const n = s[++i];
+        if (n === "n") out.push(10);
+        else if (n === "r") out.push(13);
+        else if (n === "t") out.push(9);
+        else if (n === "b") out.push(8);
+        else if (n === "f") out.push(12);
+        else if (n === "(" || n === ")" || n === "\\") out.push(n.charCodeAt(0));
+        else if (/[0-7]/.test(n)) {
+          let oct = n;
+          while (oct.length < 3 && /[0-7]/.test(s[i + 1])) oct += s[++i];
+          out.push(parseInt(oct, 8) & 0xff);
+        } else if (n === "\n") { /* continuación de línea */ }
+        else out.push(n ? n.charCodeAt(0) : 0);
+      } else out.push(c.charCodeAt(0));
+    }
+    return new Uint8Array(out);
+  }
+
+  function decodificarConMapa(bytes, mapa) {
+    if (!mapa || !mapa.size) return latin1(bytes);
+    let s = "";
+    const dosBytes = Array.from(mapa.keys()).some((k) => k > 255);
+    if (dosBytes) {
+      for (let i = 0; i + 1 < bytes.length; i += 2) {
+        const cp = (bytes[i] << 8) | bytes[i + 1];
+        s += mapa.has(cp) ? mapa.get(cp) : "";
+      }
+    } else {
+      for (let i = 0; i < bytes.length; i++) s += mapa.has(bytes[i]) ? mapa.get(bytes[i]) : String.fromCharCode(bytes[i]);
+    }
+    return s;
+  }
+
+  // Grupos: 1=nombre de fuente (Tf) · 2=cadena hexadecimal · 3,4=desplazamiento (Td/TD)
+  const TOKEN_PDF = /\/([^\s/\[\]<>(){}]+)\s+[-\d.]+\s+Tf|\((?:[^()\\]|\\.)*\)|\[(?:[^\[\]]|\\.)*\]\s*TJ|<([0-9a-fA-F\s]+)>|T\*|(-?[\d.]+)\s+(-?[\d.]+)\s+(?:Td|TD)|BT|ET/g;
+
+  function extraerTextoDeFlujo(contenido, fuentesPorNombre, objs, bytes, cache) {
+    let salida = "", mapaActual = null;
+    let m;
+    TOKEN_PDF.lastIndex = 0;
+    const pendientes = [];
+    while ((m = TOKEN_PDF.exec(contenido))) {
+      const tok = m[0];
+      if (m[1]) {                                   // /F1 12 Tf
+        const numFuente = fuentesPorNombre.get(m[1]);
+        mapaActual = numFuente != null ? fuenteToUnicode(objs, numFuente, bytes, cache) : null;
+        continue;
+      }
+      if (m[2] != null) {                           // <hex> Tj
+        salida += decodificarConMapa(hexABytes(m[2]), mapaActual);
+        continue;
+      }
+      if (tok === "BT") { pendientes.length = 0; continue; }
+      if (tok === "ET") { if (salida && !/\s$/.test(salida)) salida += "\n"; continue; }
+      if (tok === "T*" || m[3] != null) { if (salida && !/\s$/.test(salida)) salida += "\n"; continue; }
+      if (tok.endsWith("TJ")) {
+        const trozos = tok.match(/\((?:[^()\\]|\\.)*\)|<[0-9a-fA-F\s]+>/g) || [];
+        for (const t of trozos) {
+          if (t[0] === "<") salida += decodificarConMapa(hexABytes(t), mapaActual);
+          else salida += decodificarConMapa(decodificarLiteral(t.slice(1, -1)), mapaActual);
+        }
+        continue;
+      }
+      if (tok[0] === "(") {                          // (texto) Tj
+        const contenidoLiteral = tok.slice(1, -1);
+        salida += decodificarConMapa(decodificarLiteral(contenidoLiteral), mapaActual);
+        continue;
+      }
+    }
+    return salida;
+  }
+
+  function leerPdf(bytes) {
+    const lat = latin1(bytes);
+    const objs = objetosPdf(lat);
+    const cache = new Map();
+
+    // 1. objetos que son fuentes y su ToUnicode
+    const fuentes = new Set();
+    for (const [num, o] of objs) if (/\/Type\s*\/Font/.test(o.dict)) fuentes.add(num);
+
+    // 2. nombre de recurso (/F1) → número de objeto de fuente
+    const fuentesPorNombre = new Map();
+    const reRef = /\/([A-Za-z0-9#_.+-]+)\s+(\d+)\s+0\s+R/g;
+    let m;
+    while ((m = reRef.exec(lat))) {
+      const num = parseInt(m[2], 10);
+      if (fuentes.has(num) && !fuentesPorNombre.has(m[1])) fuentesPorNombre.set(m[1], num);
+    }
+
+    // 3. flujos de contenido con operadores de texto
+    let total = "", paginas = 0;
+    for (const [num, o] of objs) {
+      if (o.sIni < 0) continue;
+      if (/\/Type\s*\/(Font|XObject|Metadata)/.test(o.dict)) continue;
+      const flujo = flujoDe(objs, num, bytes);
+      if (!flujo || flujo.length < 8) continue;
+      const contenido = latin1(flujo);
+      if (!/\bBT\b/.test(contenido) || !/(Tj|TJ)/.test(contenido)) continue;
+      const t = extraerTextoDeFlujo(contenido, fuentesPorNombre, objs, bytes, cache);
+      if (t && t.trim().length) { total += t + "\n\n"; paginas++; }
+      if (total.length > 600000) break;
+    }
+    return {
+      texto: total.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim(),
+      paginas,
+      fuentes: fuentes.size
+    };
+  }
+
+  /* --------------------------------------------------------- análisis de documentos */
+  const RE_IP = /\b(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}\b/g;
+  const RE_VLAN = /\bVLAN\s*#?\s*(\d{1,4})\b/gi;
+  const RE_CIDR = /\b(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}\/(?:3[0-2]|[12]?\d)\b/g;
+  const RE_HOST = /\b[a-z0-9][a-z0-9-]{1,62}\.(?:local|lan|corp|internal|intranet|edu|edu\.[a-z]{2}|com|net|org|io)\b/gi;
+
+  function contexto(texto, indice, radio) {
+    const r = radio || 90;
+    const ini = Math.max(0, indice - r), fin = Math.min(texto.length, indice + r);
+    return texto.slice(ini, fin).replace(/\s+/g, " ").trim();
+  }
+
+  function analizarDocumento(texto, fuente) {
+    const ips = [], vlans = new Map(), cidrs = new Set(), hosts = new Set();
+    let m;
+    RE_IP.lastIndex = 0;
+    while ((m = RE_IP.exec(texto))) {
+      ips.push({ valor: m[0], fuente, contexto: contexto(texto, m.index) });
+      if (ips.length > 400) break;
+    }
+    RE_VLAN.lastIndex = 0;
+    while ((m = RE_VLAN.exec(texto))) {
+      const id = parseInt(m[1], 10);
+      if (!vlans.has(id)) vlans.set(id, { id, fuente, contexto: contexto(texto, m.index) });
+    }
+    RE_CIDR.lastIndex = 0;
+    while ((m = RE_CIDR.exec(texto))) cidrs.add(m[0]);
+    RE_HOST.lastIndex = 0;
+    while ((m = RE_HOST.exec(texto))) hosts.add(m[0].toLowerCase());
+    return {
+      fuente,
+      caracteres: texto.length,
+      ips,
+      vlans: Array.from(vlans.values()),
+      cidrs: Array.from(cidrs),
+      hosts: Array.from(hosts)
+    };
+  }
+
+  /* -------------------------------------------------------- gráfico → escena 3D */
+  const ALTO_POR_TIPO = R3.ALTURA_TIPO || {};
+
+  function aEscena(grafo, opciones) {
+    opciones = opciones || {};
+    const nodos = grafo.nodos || [];
+    if (!nodos.length) return { nodos: [], enlaces: [], zonas: [] };
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const n of nodos) {
+      minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+      minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+    }
+    for (const z of grafo.zonas || []) {
+      minX = Math.min(minX, z.x0); maxX = Math.max(maxX, z.x1);
+      minY = Math.min(minY, z.y0); maxY = Math.max(maxY, z.y1);
+    }
+    const ancho = Math.max(1, maxX - minX), alto = Math.max(1, maxY - minY);
+    const objetivo = opciones.anchoMundo || 24;      // unidades de mundo del lado mayor
+    const escala = Math.max(ancho, alto) / objetivo;
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+
+    const convertir = (x, y) => ({ x: (x - cx) / escala, z: (y - cy) / escala });
+    const porId = new Map();
+
+    const escenaNodos = nodos.slice(0, 260).map((n) => {
+      const p = convertir(n.x + (n.ancho || 0) / 2, n.y + (n.alto || 0) / 2);
+      const nodo = {
+        id: n.id,
+        tipo: n.tipo || "desconocido",
+        nombre: n.etiqueta || n.id,
+        sub: n.sub || (n.zona ? (grafo.zonas.find((z) => z.id === n.zona) || {}).nombre || "" : ""),
+        x: p.x, z: p.z,
+        color: n.color || null,
+        estadoColor: "#34d399",
+        etiqueta: n.ip || primeraIP(n.etiqueta) || ""
+      };
+      porId.set(n.id, nodo);
+      return nodo;
+    });
+
+    const escenaEnlaces = (grafo.enlaces || []).filter((l) => porId.has(l.a) && porId.has(l.b)).map((l) => ({
+      id: l.id,
+      a: l.a, b: l.b,
+      color: l.color || "#64748b",
+      grosor: 3,
+      tipo: "acceso",
+      rotulo: l.etiqueta || "",
+      traficoAmbiente: true
+    }));
+
+    const escenaZonas = (grafo.zonas || []).map((z) => {
+      const a = convertir(z.x0, z.y0), b = convertir(z.x1, z.y1);
+      return { nombre: z.nombre, x0: a.x, z0: a.z, x1: b.x, z1: b.z, color: z.color || "#38bdf8" };
+    }).filter((z) => Math.abs(z.x1 - z.x0) > 0.5 && Math.abs(z.z1 - z.z0) > 0.5);
+
+    return { nodos: escenaNodos, enlaces: escenaEnlaces, zonas: escenaZonas };
+  }
+
+  /* ---------------------------------------------------------- escena de inventario */
+  function escenaInventario(inventario) {
+    const ips = inventario.ips || [];
+    if (ips.length < 2) return null;
+    const vistos = new Set();
+    const unicas = [];
+    for (const it of ips) {
+      if (vistos.has(it.valor)) continue;
+      vistos.add(it.valor);
+      unicas.push(it);
+      if (unicas.length >= 40) break;
+    }
+    const subred = (ip) => ip.split(".").slice(0, 3).join(".");
+    const grupos = new Map();
+    for (const it of unicas) {
+      const s = subred(it.valor);
+      if (!grupos.has(s)) grupos.set(s, []);
+      grupos.get(s).push(it);
+    }
+    const nodos = [], zonas = [];
+    let fila = 0;
+    const colores = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#22d3ee", "#f472b6", "#94a3b8"];
+    for (const [red, lista] of grupos) {
+      const zx = (fila % 3) * 9 - 9;
+      const zz = Math.floor(fila / 3) * 5 - 2;
+      zonas.push({ nombre: red + ".0/24", x0: zx - 3.6, z0: zz - 2, x1: zx + 3.6, z1: zz + 2, color: colores[fila % colores.length] });
+      lista.forEach((it, i) => {
+        nodos.push({
+          id: "ip-" + it.valor,
+          tipo: R3.engine && R3.engine.tipoPorIP ? R3.engine.tipoPorIP(it.valor) : "pc",
+          nombre: it.valor,
+          sub: "documentado en " + it.fuente,
+          x: zx - 2.4 + (i % 4) * 1.6,
+          z: zz - 1 + Math.floor(i / 4) * 1.5,
+          color: colores[fila % colores.length],
+          estadoColor: "#34d399"
+        });
+      });
+      fila++;
+    }
+    return { nodos, enlaces: [], zonas };
+  }
+
+  /* ---------------------------------------------------------------- orquestador */
+  function tipoDeArchivo(nombre, tipoMime) {
+    const ext = (nombre.split(".").pop() || "").toLowerCase();
+    if (ext === "drawio" || ext === "dio" || (ext === "xml" && /drawio/i.test(nombre))) return "drawio";
+    if (ext === "docx") return "docx";
+    if (ext === "pdf") return "pdf";
+    if (["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext)) return "imagen";
+    if (["txt", "md", "markdown", "csv", "tsv", "log"].includes(ext)) return "texto";
+    if (ext === "json") return "json";
+    if (ext === "doc") return "doc-antiguo";
+    if (ext === "xlsx" || ext === "xls") return "hoja";
+    if (tipoMime && /pdf/.test(tipoMime)) return "pdf";
+    if (tipoMime && /image/.test(tipoMime)) return "imagen";
+    if (tipoMime && /json/.test(tipoMime)) return "json";
+    if (tipoMime && /text/.test(tipoMime)) return "texto";
+    return "desconocido";
+  }
+
+  async function leerArchivo(archivo) {
+    if (archivo.arrayBuffer) return new Uint8Array(await archivo.arrayBuffer());
+    if (archivo instanceof Uint8Array) return archivo;
+    return new Uint8Array(archivo);
+  }
+
+  async function procesar(archivos, opciones) {
+    opciones = opciones || {};
+    const fuentes = [], escenas = [], documentos = [], imagenes = [], avisos = [];
+    const inventario = { ips: [], vlans: [], cidrs: [], hosts: [] };
+
+    for (const archivo of archivos) {
+      const nombre = archivo.name || "archivo";
+      const tipo = tipoDeArchivo(nombre, archivo.type);
+      const registro = { nombre, tipo, bytes: archivo.size || 0, ok: false, detalle: "" };
+      try {
+        const bytes = await leerArchivo(archivo);
+        registro.bytes = bytes.length;
+        if (tipo === "drawio") {
+          const paginas = leerDrawio(bytes, nombre.replace(/\.(drawio|xml|dio)$/i, ""));
+          let conNodos = 0;
+          for (const p of paginas) {
+            if (!p.nodos.length) continue;
+            conNodos++;
+            escenas.push({ nombre: p.nombre || nombre, fuente: nombre, grafo: p });
+          }
+          registro.ok = conNodos > 0;
+          registro.detalle = `${paginas.length} página(s), ${conNodos} con topología`;
+          if (!conNodos) avisos.push(`${nombre}: el diagrama no tiene formas con etiqueta reconocibles.`);
+        } else if (tipo === "docx") {
+          const r = leerDocx(bytes);
+          documentos.push({ fuente: nombre, texto: r.texto, parrafos: r.parrafos });
+          registro.ok = r.texto.length > 0;
+          registro.detalle = `${r.parrafos} párrafos, ${r.texto.length} caracteres`;
+        } else if (tipo === "pdf") {
+          const r = leerPdf(bytes);
+          documentos.push({ fuente: nombre, texto: r.texto, paginas: r.paginas });
+          registro.ok = r.texto.length > 0;
+          registro.detalle = r.texto.length
+            ? `${r.paginas} flujo(s) de texto, ${r.texto.length} caracteres`
+            : "sin capa de texto (¿PDF escaneado? requiere OCR, fuera de alcance)";
+          if (!r.texto.length) avisos.push(`${nombre}: no se encontró texto seleccionable; se puede adjuntar como imagen.`);
+        } else if (tipo === "texto" || tipo === "json") {
+          const t = texto(bytes);
+          if (tipo === "json") {
+            try {
+              const j = JSON.parse(t);
+              if (j && Array.isArray(j.nodos)) {
+                escenas.push({
+                  nombre: j.nombre || nombre, fuente: nombre,
+                  grafo: {
+                    nodos: j.nodos.map((n, i) => ({
+                      id: n.id || "n" + i,
+                      etiqueta: n.nombre || n.etiqueta || n.id || "nodo " + i,
+                      tipo: n.tipo || "desconocido",
+                      x: (n.x != null ? n.x : i * 120), y: (n.z != null ? n.z * 100 : (n.y != null ? n.y : 0)),
+                      ancho: 80, alto: 40, color: n.color || null
+                    })),
+                    enlaces: (j.enlaces || []).map((l, i) => ({ id: l.id || "e" + i, a: l.a, b: l.b, etiqueta: l.rotulo || l.etiqueta || "" })),
+                    zonas: (j.zonas || []).map((z, i) => ({ id: "z" + i, nombre: z.nombre, x0: z.x0 * 100, y0: z.z0 * 100, x1: z.x1 * 100, y1: z.z1 * 100, color: z.color }))
+                  }
+                });
+                registro.ok = true;
+                registro.detalle = `escena importada: ${j.nodos.length} nodos`;
+              }
+            } catch (e) { /* JSON no válido: se trata como texto */ }
+          }
+          if (!registro.ok) {
+            documentos.push({ fuente: nombre, texto: t });
+            registro.ok = true;
+            registro.detalle = `${t.length} caracteres de texto`;
+          }
+        } else if (tipo === "imagen") {
+          const mime = archivo.type || (/\.svg$/i.test(nombre) ? "image/svg+xml" : "image/png");
+          if (bytes.length > 8 * 1024 * 1024) {
+            registro.detalle = "imagen mayor de 8 MB: se registra sin vista previa";
+            imagenes.push({ fuente: nombre, bytes: bytes.length, mime, datos: null });
+          } else {
+            imagenes.push({ fuente: nombre, bytes: bytes.length, mime, datos: `data:${mime};base64,${btoa_(bytes)}` });
+            registro.detalle = "evidencia visual adjunta";
+          }
+          registro.ok = true;
+        } else {
+          registro.detalle = "formato no soportado (usa .drawio, .pdf, .docx, .txt, .md, .csv, .json o imágenes)";
+          avisos.push(`${nombre}: ${registro.detalle}`);
+        }
+      } catch (e) {
+        registro.detalle = "error: " + e.message;
+        avisos.push(`${nombre}: ${e.message}`);
+      }
+      fuentes.push(registro);
+    }
+
+    // Análisis de documentos: inventario + evidencias
+    for (const doc of documentos) {
+      const a = analizarDocumento(doc.texto, doc.fuente);
+      doc.analisis = a;
+      inventario.ips.push(...a.ips);
+      for (const v of a.vlans) if (!inventario.vlans.some((x) => x.id === v.id)) inventario.vlans.push(v);
+      for (const c of a.cidrs) if (!inventario.cidrs.includes(c)) inventario.cidrs.push(c);
+      for (const h of a.hosts) if (!inventario.hosts.includes(h)) inventario.hosts.push(h);
+    }
+
+    // Si no hay topología declarada pero sí direcciones documentadas, se ofrece una escena de inventario
+    let escenaInventarioGenerada = null;
+    if (!escenas.length && inventario.ips.length >= 2) {
+      escenaInventarioGenerada = escenaInventario(inventario);
+      if (escenaInventarioGenerada) {
+        escenas.push({ nombre: "Inventario documentado", fuente: "documentos", grafo: { nodos: [], enlaces: [], zonas: [] }, escenaDirecta: escenaInventarioGenerada });
+        avisos.push("No había .drawio: se generó una escena de inventario con las direcciones IP documentadas (sin enlaces, porque el documento no declara conexiones).");
+      }
+    }
+
+    return { fuentes, escenas, documentos, imagenes, inventario, avisos };
+  }
+
+  function btoa_(bytes) {
+    let s = "";
+    const trozo = 4096;
+    for (let i = 0; i < bytes.length; i += trozo) s += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(bytes.length, i + trozo)));
+    return btoa(s);
+  }
+
+  /* Evidencias de un nodo: coincidencias de su etiqueta/IP en los documentos */
+  function evidenciasDe(nodo, documentos, limite) {
+    const salida = [];
+    const etiqueta = limpiarEtiqueta(nodo.nombre || "");
+    const agujas = [];
+    if (etiqueta && etiqueta.length >= 3) agujas.push(etiqueta);
+    if (nodo.ip) agujas.push(nodo.ip);
+    for (const doc of documentos) {
+      const t = doc.texto || "";
+      for (const aguja of agujas) {
+        let idx = t.toLowerCase().indexOf(aguja.toLowerCase());
+        let cuenta = 0;
+        while (idx >= 0 && cuenta < 2) {
+          salida.push({ fuente: doc.fuente, aguja, cita: contexto(t, idx, 110) });
+          idx = t.toLowerCase().indexOf(aguja.toLowerCase(), idx + aguja.length);
+          cuenta++;
+        }
+      }
+      if (salida.length >= (limite || 6)) break;
+    }
+    return salida.slice(0, limite || 6);
+  }
+
+  R3.Ingesta = {
+    procesar, leerDrawio, leerDocx, leerPdf, analizarDocumento,
+    aEscena, escenaInventario, evidenciasDe, tipoDeArchivo, primeraIP,
+    limpiarEtiqueta, tipoPorEtiqueta, descomprimirDrawio
+  };
+})(window.R3 = window.R3 || {});
+</script>
+<script>/* =====================================================================================================
+   ejemplo.js — Escenario de demostración del Lab de Redes 3D.
+   Es un .drawio real (XML plano) y un documento de inventario; ambos entran por el MISMO pipeline que
+   los archivos del usuario, así que sirven también como prueba viva de la ingesta.
+   ===================================================================================================== */
+(function (R3) {
+  "use strict";
+
+  R3.EJEMPLO_DRAWIO = `<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="campus" name="Campus · ejemplo">
+    <mxGraphModel dx="1100" dy="760" grid="1" gridSize="10" page="1" pageWidth="1200" pageHeight="900">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="zA" value="Edificio A · Oficinas" style="swimlane;startSize=26;fillColor=#101a2c;strokeColor=#38bdf8;fontColor=#cbd5e1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="380" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="zB" value="Edificio B · Aulas" style="swimlane;startSize=26;fillColor=#101a2c;strokeColor=#a78bfa;fontColor=#cbd5e1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="300" width="380" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="internet" value="Internet" style="shape=cloud;fillColor=#1e293b;strokeColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="470" y="20" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="isp" value="Router ISP 203.0.113.1" style="fillColor=#0b1220;strokeColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="480" y="110" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="fg" value="FortiGate 200G 10.10.99.1" style="fillColor=#0b1220;strokeColor=#fb923c;" vertex="1" parent="1">
+          <mxGeometry x="480" y="186" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="core" value="Core FS-148F 10.10.99.11" style="fillColor=#0b1220;strokeColor=#a78bfa;" vertex="1" parent="1">
+          <mxGeometry x="480" y="262" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="srv" value="Servidores DNS/DHCP 10.10.60.10" style="fillColor=#0b1220;strokeColor=#f472b6;" vertex="1" parent="1">
+          <mxGeometry x="480" y="500" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="swA" value="Switch A · Oficinas 10.10.99.12" style="fillColor=#0b1220;strokeColor=#38bdf8;" vertex="1" parent="zA">
+          <mxGeometry x="140" y="60" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="pc1" value="PC Rectoría 10.10.10.21" style="fillColor=#0b1220;strokeColor=#60a5fa;" vertex="1" parent="zA">
+          <mxGeometry x="40" y="150" width="110" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="pc2" value="PC Contabilidad 10.10.10.22" style="fillColor=#0b1220;strokeColor=#60a5fa;" vertex="1" parent="zA">
+          <mxGeometry x="230" y="150" width="110" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="tel" value="Teléfono IP · Voz" style="fillColor=#0b1220;strokeColor=#fbbf24;" vertex="1" parent="zA">
+          <mxGeometry x="40" y="240" width="110" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="swB" value="Switch B · Aulas 10.10.99.13" style="fillColor=#0b1220;strokeColor=#a78bfa;" vertex="1" parent="zB">
+          <mxGeometry x="140" y="60" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="ap" value="AP Wi-Fi Aulas" style="fillColor=#0b1220;strokeColor=#22d3ee;" vertex="1" parent="zB">
+          <mxGeometry x="40" y="150" width="110" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="cam" value="Cámara CCTV" style="fillColor=#0b1220;strokeColor=#fb7185;" vertex="1" parent="zB">
+          <mxGeometry x="230" y="150" width="110" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="WAN 1 Gbps" edge="1" parent="1" source="internet" target="isp" style="strokeColor=#94a3b8;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="203.0.113.0/30" edge="1" parent="1" source="isp" target="fg" style="strokeColor=#94a3b8;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="trunk 802.1Q" edge="1" parent="1" source="fg" target="core" style="strokeColor=#8b5cf6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="trunk" edge="1" parent="1" source="core" target="swA" style="strokeColor=#38bdf8;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="trunk" edge="1" parent="1" source="core" target="swB" style="strokeColor=#a78bfa;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="VLAN 60" edge="1" parent="1" source="core" target="srv" style="strokeColor=#f472b6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="VLAN 10" edge="1" parent="1" source="swA" target="pc1" style="strokeColor=#60a5fa;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="VLAN 10" edge="1" parent="1" source="swA" target="pc2" style="strokeColor=#60a5fa;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="VLAN 40 · PoE" edge="1" parent="1" source="swA" target="tel" style="strokeColor=#fbbf24;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="PoE · VLAN 30" edge="1" parent="1" source="swB" target="ap" style="strokeColor=#22d3ee;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="VLAN 50 · PoE" edge="1" parent="1" source="swB" target="cam" style="strokeColor=#fb7185;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>`;
+
+  R3.EJEMPLO_DOC = {
+    nombre: "inventario-ejemplo.txt",
+    texto: [
+      "INVENTARIO DE RED · EJEMPLO DE DEMOSTRACIÓN",
+      "",
+      "Perímetro: el FortiGate 200G (10.10.99.1) es la puerta de enlace y aplica las políticas entre VLANs.",
+      "El enlace con el proveedor usa la red 203.0.113.0/30 y el Router ISP 203.0.113.1.",
+      "Núcleo: Core FS-148F (10.10.99.11) concentra los troncales 802.1Q hacia los dos edificios.",
+      "Edificio A: Switch A · Oficinas (10.10.99.12) atiende la VLAN 10 con el PC Rectoría 10.10.10.21 y el PC Contabilidad 10.10.10.22.",
+      "La VLAN 40 se reserva para el Teléfono IP · Voz con PoE y prioridad QoS.",
+      "Edificio B: Switch B · Aulas (10.10.99.13) alimenta el AP Wi-Fi Aulas por PoE en la VLAN 30 y la Cámara CCTV en la VLAN 50.",
+      "Servidores: el equipo Servidores DNS/DHCP 10.10.60.10 centraliza el DHCP y el DNS de todas las VLANs.",
+      "Gestión: la VLAN 99 (10.10.99.0/24) agrupa firewall, conmutadores y puntos de acceso."
+    ].join("\n")
+  };
+})(window.R3 = window.R3 || {});
+</script>
+<script>/* =====================================================================================================
+   app.js — Lab de Redes 3D: de los archivos al escenario navegable.
+   Todo ocurre en el navegador: no hay backend, no hay subida de datos y no hay dependencias externas.
+   ===================================================================================================== */
+(function () {
+  "use strict";
+
+  const { esc, clamp } = R3.util;
+  const { $, $$, toast, ficha, icono, bytes } = R3.UI;
+  const I = R3.Ingesta;
+
+  const TITULO_TIPO = {
+    nube: "Nube / Internet", router: "Router", firewall: "Firewall", switch: "Conmutador",
+    servidor: "Servidor", ap: "Punto de acceso", pc: "PC", portatil: "Portátil",
+    telefono: "Teléfono IP", camara: "Cámara IP", nvr: "Grabador NVR",
+    documento: "Documento", desconocido: "Sin clasificar", alerta: "Alerta"
+  };
+
+  const ESTADO = {
+    archivos: [],        // File/objeto {name, arrayBuffer} acumulados
+    resultado: null,     // salida de Ingesta.procesar
+    escenas: [],
+    actual: 0,
+    sel: null,
+    demo: true
+  };
+
+  /* ------------------------------------------------------------------- motor 3D */
+  const motor = new R3.Motor3D($("#lab"), {
+    onPick: (obj) => {
+      ESTADO.sel = obj;
+      renderInspector();
+      if (window.innerWidth <= 1080 && obj) $("#inspector").classList.add("abierto");
+    }
+  });
+  R3.motor = motor;
+
+  $("#inspector").addEventListener("click", (ev) => {
+    if (window.innerWidth > 1080) return;
+    const hoja = ev.currentTarget;
+    if (!hoja.classList.contains("abierto")) hoja.classList.add("abierto");
+    else if (ev.target === hoja || ev.target.closest("h3")) hoja.classList.remove("abierto");
+  });
+
+  function zonaSegura() {
+    const t = document.querySelector(".titulo-flotante");
+    const alto = t ? t.getBoundingClientRect().height : 0;
+    const estrecho = window.innerWidth <= 1080;
+    return { arriba: Math.round(alto + 42), abajo: estrecho ? 96 : 86, izq: 14, der: 14 };
+  }
+  window.addEventListener("resize", () => {
+    motor.zonaSegura = zonaSegura();
+    motor.encuadrar();
+  });
+
+  /* ------------------------------------------------------------------- helpers */
+  const escenaDe = (entrada) => {
+    if (!entrada) return { nodos: [], enlaces: [], zonas: [] };
+    if (!entrada._escena) entrada._escena = entrada.escenaDirecta || I.aEscena(entrada.grafo);
+    return entrada._escena;
+  };
+  const escenaActual = () => escenaDe(ESTADO.escenas[ESTADO.actual]);
+  const entradaActual = () => ESTADO.escenas[ESTADO.actual] || null;
+  const nodoPorId = (id) => escenaActual().nodos.find((n) => n.id === id) || null;
+
+  function archivoDeTexto(nombre, texto, mime) {
+    const datos = new TextEncoder().encode(texto);
+    return {
+      name: nombre,
+      type: mime || "text/plain",
+      size: datos.length,
+      arrayBuffer: async () => datos.buffer.slice(0, datos.byteLength)
+    };
+  }
+
+  function resaltar(cita, aguja) {
+    const base = esc(cita || "");
+    if (!aguja) return base;
+    const patron = esc(aguja).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    try { return base.replace(new RegExp(patron, "gi"), (m) => `<mark>${m}</mark>`); }
+    catch (e) { return base; }
+  }
+
+  /* --------------------------------------------------------------- procesamiento */
+  async function procesarTodo(opciones) {
+    const carga = $("#carga");
+    $("#carga-texto").textContent = "Procesando " + ESTADO.archivos.length + " archivo(s)…";
+    carga.classList.remove("oculto");
+    try {
+      const r = await I.procesar(ESTADO.archivos, opciones || {});
+      ESTADO.resultado = r;
+      ESTADO.escenas = r.escenas.slice();
+      if (!ESTADO.escenas.length) ESTADO.actual = -1;
+      else if (ESTADO.actual < 0 || ESTADO.actual >= ESTADO.escenas.length) ESTADO.actual = 0;
+      ESTADO.sel = null;
+      refrescarTodo();
+    } catch (e) {
+      toast("Error al procesar: " + e.message, 6000);
+      console.error(e);
+    } finally {
+      carga.classList.add("oculto");
+    }
+  }
+
+  function refrescarTodo() {
+    renderHUD();
+    renderInspector();
+    renderInsumos();
+    renderEvidencias();
+    renderSelectEscenas();
+    aplicarEscena(ESTADO.actual);
+  }
+
+  function aplicarEscena(i) {
+    ESTADO.actual = i;
+    const e = entradaActual();
+    const d = escenaActual();
+    motor.zonaSegura = zonaSegura();
+    motor.setDatos(d);
+    // Color de los enlaces por zona cuando el insumo no trae color propio
+    motor.encuadrar();
+    motor.limpiarFlujo();
+    renderHUD();
+    renderInspector();
+    renderSelectEscenas();
+    const sel = $("#sel-escena");
+    if (sel && i >= 0) sel.value = String(i);
+    void e;
+  }
+
+  /* ------------------------------------------------------------------------ HUD */
+  function renderHUD() {
+    const e = entradaActual();
+    const d = escenaActual();
+    const r = ESTADO.resultado;
+    const docs = r ? r.documentos.length : 0;
+    const ips = r ? r.inventario.ips.length : 0;
+
+    $("#hud-titulo").textContent = e ? e.nombre : "Sin escenario";
+    $("#hud-desc").textContent = e
+      ? `Fuente: ${e.fuente} · ${d.nodos.length} dispositivos · ${d.enlaces.length} enlaces · ${d.zonas.length} zonas`
+      : "Carga un .drawio para construir la topología, o adjunta documentos para reunir evidencias.";
+
+    $("#hud-kpis").innerHTML = [
+      ["Dispositivos", d.nodos.length],
+      ["Enlaces", d.enlaces.length],
+      ["Zonas", d.zonas.length],
+      ["Documentos", docs],
+      ["IPs", ips]
+    ].map(([k, v]) => `<span class="kpi">${esc(k)} <b>${v}</b></span>`).join("");
+
+    const zonas = d.zonas.slice(0, 6);
+    $("#leyenda").innerHTML = zonas.length
+      ? zonas.map((z) => `<span class="it"><span class="pt" style="background:${z.color || "#38bdf8"}"></span>${esc(z.nombre)}</span>`).join("")
+      : `<span class="it">${esc(e ? "Sin zonas declaradas en el insumo" : "Sin insumos cargados")}</span>`;
+  }
+
+  function renderSelectEscenas() {
+    const sel = $("#sel-escena");
+    if (!sel) return;
+    if (!ESTADO.escenas.length) {
+      sel.innerHTML = `<option value="-1">Sin escenas</option>`;
+      sel.value = "-1";
+      return;
+    }
+    sel.innerHTML = ESTADO.escenas.map((e, i) =>
+      `<option value="${i}">${esc(e.nombre)}${e.fuente ? " · " + esc(e.fuente) : ""}</option>`).join("");
+    sel.value = String(ESTADO.actual);
+  }
+
+  /* ------------------------------------------------------------------ inspector */
+  function evidenciaHTML(lista) {
+    if (!lista.length) return "";
+    return lista.map((ev) =>
+      `<div class="evidencia"><span class="fuente">${esc(ev.fuente)}</span>${resaltar(ev.cita, ev.aguja)}</div>`).join("");
+  }
+
+  function panelInicio() {
+    const r = ESTADO.resultado;
+    const avisos = r && r.avisos.length
+      ? `<div class="tarjeta"><h3>Avisos de la ingesta</h3>${r.avisos.map((a) =>
+          `<div class="aviso"><span>⚠</span><span>${esc(a)}</span></div>`).join("")}</div>`
+      : "";
+    const pasos = [
+      ["1", "Carga el .drawio", "Cada página del archivo se convierte en una escena: las formas son dispositivos y las flechas, enlaces."],
+      ["2", "Añade documentos", "PDF, Word o texto aportan direcciones IP, VLANs y párrafos que se adjuntan como evidencia a cada nodo."],
+      ["3", "Explora y simula", "Orbita la escena, inspecciona cada dispositivo y traza el camino de un paquete por la topología."]
+    ];
+    return `
+      <div class="tarjeta">
+        <h3>Cómo funciona</h3>
+        <div class="acordeon">
+          ${pasos.map(([n, t, d]) => `<details open><summary><b style="color:var(--acento-2)">${n}</b> ${esc(t)}</summary><div class="cuerpo">${esc(d)}</div></details>`).join("")}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn--acento" data-accion="cargar">Cargar archivos</button>
+          <button class="btn" data-accion="ejemplo">Volver al ejemplo</button>
+          <button class="btn" data-accion="ajustar">Encuadrar</button>
+        </div>
+      </div>
+      ${ESTADO.demo ? `<div class="tarjeta tarjeta--plana"><h3>Estás viendo el ejemplo</h3>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--texto-2)">
+        Este escenario se generó con un <code>.drawio</code> de demostración y un inventario de texto que entran por el mismo
+        pipeline que tus archivos. Carga los tuyos y sustituirán al ejemplo.</p></div>` : ""}
+      ${avisos}
+      ${panelSimulacion()}`;
+  }
+
+  function panelNodo(n) {
+    const d = escenaActual();
+    const zona = d.zonas.find((z) => n.x >= z.x0 && n.x <= z.x1 && n.z >= z.z0 && n.z <= z.z1);
+    const docs = ESTADO.resultado ? ESTADO.resultado.documentos : [];
+    const evidencias = I.evidenciasDe({ nombre: n.nombre, ip: n.etiqueta }, docs, 4);
+    const ipsDoc = ESTADO.resultado
+      ? ESTADO.resultado.inventario.ips.filter((it) => {
+          const etiqueta = (n.nombre || "").toLowerCase();
+          return etiqueta.length > 3 && it.contexto.toLowerCase().includes(etiqueta);
+        }).slice(0, 3)
+      : [];
+    const filas = [
+      ["Tipo", esc(TITULO_TIPO[n.tipo] || n.tipo)],
+      ["Zona", zona ? esc(zona.nombre) : "—"],
+      ["IP en la etiqueta", n.etiqueta ? `<span class="mono">${esc(n.etiqueta)}</span>` : "—"],
+      ["Conexiones", String(d.enlaces.filter((l) => l.a === n.id || l.b === n.id).length)],
+      ["Origen", esc((entradaActual() || {}).fuente || "—")]
+    ];
+    const vecinos = d.enlaces
+      .filter((l) => l.a === n.id || l.b === n.id)
+      .map((l) => {
+        const otro = nodoPorId(l.a === n.id ? l.b : l.a);
+        return `<button class="chip" data-ir="${esc(l.a === n.id ? l.b : l.a)}">${esc(otro ? otro.nombre : "?")}${l.rotulo ? " · " + esc(l.rotulo) : ""}</button>`;
+      }).join("");
+
+    return `
+      <div class="tarjeta">
+        <div class="cab-detalle">
+          <div class="cab-icono" style="color:${n.color || "#38bdf8"};border-color:${(n.color || "#38bdf8")}55;background:${(n.color || "#38bdf8")}18">${icono(n.tipo)}</div>
+          <div class="cab-txt"><h2>${esc(n.nombre)}</h2><p>${esc(n.sub || TITULO_TIPO[n.tipo] || n.tipo)}</p></div>
+        </div>
+        <div style="margin-top:12px">${ficha(filas)}</div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn" data-accion="enfocar">Enfocar</button>
+          <button class="btn" data-accion="origen">Origen de simulación</button>
+          <button class="btn" data-accion="destino">Destino</button>
+        </div>
+      </div>
+      ${vecinos ? `<div class="tarjeta"><h3>Conectado con</h3><div class="chips">${vecinos}</div></div>` : ""}
+      ${evidencias.length ? `<div class="tarjeta"><h3>Evidencias en documentos</h3>${evidenciaHTML(evidencias)}</div>`
+        : `<div class="tarjeta"><h3>Evidencias en documentos</h3><div class="vacio" style="padding:14px 6px">Ningún documento menciona «${esc(n.nombre)}». Carga un informe en la pestaña Insumos para respaldar este nodo.</div></div>`}
+      ${ipsDoc.length ? `<div class="tarjeta"><h3>Direcciones relacionadas</h3>${ipsDoc.map((it) =>
+        `<div class="evidencia"><span class="fuente">${esc(it.fuente)}</span><span class="mono">${esc(it.valor)}</span> — ${esc(it.contexto)}</div>`).join("")}</div>` : ""}
+    `;
+  }
+
+  function panelEnlace(l) {
+    const a = nodoPorId(l.a), b = nodoPorId(l.b);
+    return `
+      <div class="tarjeta">
+        <div class="cab-detalle">
+          <div class="cab-icono" style="color:${l.color}">${icono("switch")}</div>
+          <div class="cab-txt"><h2>${esc(l.rotulo || "Enlace")}</h2><p>${esc(a ? a.nombre : l.a)} ↔ ${esc(b ? b.nombre : l.b)}</p></div>
+        </div>
+        <div style="margin-top:12px">${ficha([
+          ["Extremo A", esc(a ? a.nombre : l.a)],
+          ["Extremo B", esc(b ? b.nombre : l.b)],
+          ["Etiqueta", l.rotulo ? esc(l.rotulo) : "—"]
+        ])}</div>
+      </div>
+      ${panelSimulacion()}`;
+  }
+
+  /* --------------------------------------------------------------- simulación */
+  function bfs(origen, destino, enlaces) {
+    const adj = new Map();
+    for (const l of enlaces) {
+      if (!adj.has(l.a)) adj.set(l.a, []);
+      if (!adj.has(l.b)) adj.set(l.b, []);
+      adj.get(l.a).push(l.b);
+      adj.get(l.b).push(l.a);
+    }
+    if (!adj.has(origen)) return null;
+    const prev = new Map([[origen, null]]);
+    const cola = [origen];
+    while (cola.length) {
+      const cur = cola.shift();
+      if (cur === destino) break;
+      for (const v of adj.get(cur) || []) {
+        if (prev.has(v)) continue;
+        prev.set(v, cur);
+        cola.push(v);
+      }
+    }
+    if (!prev.has(destino)) return null;
+    const ruta = [];
+    let c = destino;
+    while (c != null) { ruta.unshift(c); c = prev.get(c); }
+    return ruta;
+  }
+
+  const COSTE = { switch: 0.4, router: 1.1, firewall: 1.4, nube: 1.8, ap: 2.2, servidor: 0.3, pc: 0.2, portatil: 0.2, telefono: 0.2, camara: 0.2, nvr: 0.2 };
+
+  function panelSimulacion() {
+    const d = escenaActual();
+    if (d.nodos.length < 2 || !d.enlaces.length) {
+      return `<div class="tarjeta" id="sim-caja"><h3>Simulación</h3>
+        <div class="vacio" style="padding:10px 4px">Este escenario no tiene enlaces declarados, así que no hay ruta que trazar.
+        Añade un .drawio con flechas entre dispositivos.</div></div>`;
+    }
+    const opciones = d.nodos.map((n) => `<option value="${esc(n.id)}">${esc(n.nombre)}</option>`).join("");
+    return `<div class="tarjeta" id="sim-caja">
+      <h3>Simulación de tráfico</h3>
+      <div class="form-fila">
+        <label>Origen<select class="campo" id="sim-origen">${opciones}</select></label>
+        <label>Destino<select class="campo" id="sim-destino">${opciones}</select></label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn--acento" id="btn-trazar">Trazar ruta</button>
+        <button class="btn" id="btn-detener">Detener</button>
+      </div>
+      <div class="ruta" id="sim-ruta"><span class="vacio" style="padding:2px">Sin ruta trazada.</span></div>
+      <div id="sim-detalle"></div>
+    </div>`;
+  }
+
+  function trazar() {
+    const d = escenaActual();
+    const o = $("#sim-origen"), t = $("#sim-destino");
+    if (!o || !t) return;
+    const ruta = bfs(o.value, t.value, d.enlaces);
+    const caja = $("#sim-ruta"), det = $("#sim-detalle");
+    if (!ruta) {
+      caja.innerHTML = `<span class="vacio" style="padding:2px">No hay camino entre esos dos dispositivos.</span>`;
+      det.innerHTML = "";
+      motor.limpiarFlujo();
+      return;
+    }
+    caja.innerHTML = ruta.map((id, i) => {
+      const n = nodoPorId(id);
+      const extra = i === ruta.length - 1 ? " es-destino" : (n && /router|firewall/.test(n.tipo) ? " es-router" : "");
+      return `${i ? '<span class="flecha">→</span>' : ""}<span class="salto${extra}" style="animation-delay:${i * 50}ms"><span class="n">${i + 1}</span>${esc(n ? n.nombre : id)}</span>`;
+    }).join("");
+    let acumulado = 0;
+    const filas = ruta.map((id, i) => {
+      const n = nodoPorId(id) || {};
+      acumulado += COSTE[n.tipo] != null ? COSTE[n.tipo] : 0.5;
+      const papel = i === 0 ? "Origen" : i === ruta.length - 1 ? "Destino" : (/router|firewall/.test(n.tipo || "") ? "Enruta (capa 3)" : "Conmuta (capa 2)");
+      return `<tr><td>${i + 1}</td><td>${esc(n.nombre || id)}</td><td>${esc(papel)}</td><td class="num">${acumulado.toFixed(1)} ms</td></tr>`;
+    }).join("");
+    det.innerHTML = `<div class="tabla-envoltura" style="margin-top:10px;max-height:220px"><table class="tabla">
+      <thead><tr><th>#</th><th>Dispositivo</th><th>Papel</th><th>Tiempo</th></tr></thead><tbody>${filas}</tbody></table></div>
+      <p style="font-size:10.5px;color:var(--texto-3);margin:8px 0 0">Tiempos estimados por tipo de dispositivo (didáctico, no es una medición real).</p>`;
+    motor.setFlujo(ruta, { color: "#a78bfa", velocidad: 1.35 });
+    $("#inspector").classList.add("abierto");
+    if (window.innerWidth > 1080) pestañas.activar("tab-escenario");
+  }
+
+  /* Elige extremos por defecto: el nodo más conectado como origen y una hoja como destino. */
+  function extremosPorDefecto() {
+    const d = escenaActual();
+    const grado = new Map(d.nodos.map((n) => [n.id, 0]));
+    for (const l of d.enlaces) {
+      grado.set(l.a, (grado.get(l.a) || 0) + 1);
+      grado.set(l.b, (grado.get(l.b) || 0) + 1);
+    }
+    const ordenados = d.nodos.slice().sort((x, y) => (grado.get(y.id) || 0) - (grado.get(x.id) || 0));
+    const origen = ordenados[0];
+    const hoja = ordenados.slice().reverse().find((n) => n.id !== (origen || {}).id) || ordenados[1];
+    return { origen: origen ? origen.id : "", destino: hoja ? hoja.id : "" };
+  }
+
+  function ajustarSelectsSim() {
+    const o = $("#sim-origen"), t = $("#sim-destino");
+    if (!o || !t) return;
+    const def = extremosPorDefecto();
+    if (ESTADO.simOrigen && escenaActual().nodos.some((n) => n.id === ESTADO.simOrigen)) o.value = ESTADO.simOrigen;
+    else o.value = def.origen;
+    if (ESTADO.simDestino && escenaActual().nodos.some((n) => n.id === ESTADO.simDestino)) t.value = ESTADO.simDestino;
+    else t.value = def.destino;
+  }
+
+  function renderInspector() {
+    const caja = $("#inspector");
+    const s = ESTADO.sel;
+    if (!s) { caja.innerHTML = panelInicio(); ajustarSelectsSim(); return; }
+    if (s.tipo === "nodo") {
+      const n = nodoPorId(s.id);
+      caja.innerHTML = n ? panelNodo(n) : panelInicio();
+    } else {
+      const l = escenaActual().enlaces.find((x) => x.id === s.id);
+      caja.innerHTML = l ? panelEnlace(l) : panelInicio();
+    }
+  }
+
+  /* ------------------------------------------------------------------- insumos */
+  const ETIQUETA_TIPO = {
+    drawio: "Topología (.drawio)", docx: "Documento Word", pdf: "PDF", texto: "Texto",
+    json: "JSON", imagen: "Imagen", "doc-antiguo": "Word antiguo", hoja: "Hoja de cálculo", desconocido: "Desconocido"
+  };
+
+  function renderInsumos() {
+    const r = ESTADO.resultado;
+    if (!r) return;
+    $("#lista-fuentes").innerHTML = r.fuentes.length
+      ? r.fuentes.map((f) => `<tr>
+          <td>${esc(f.nombre)}</td>
+          <td>${esc(ETIQUETA_TIPO[f.tipo] || f.tipo)}</td>
+          <td style="white-space:normal;color:var(--texto-2)">${esc(f.detalle || "—")}</td>
+          <td class="num">${bytes(f.bytes)}</td>
+        </tr>`).join("")
+      : `<tr><td colspan="4" class="vacio">Todavía no has cargado archivos.</td></tr>`;
+
+    $("#avisos").innerHTML = r.avisos.length
+      ? r.avisos.map((a) => `<div class="aviso"><span>⚠</span><span>${esc(a)}</span></div>`).join("")
+      : "";
+
+    const mapeo = [
+      { n: "1 · Detección de formato", d: "Se decide por extensión y tipo MIME; los formatos no admitidos se avisan sin romper el proceso.", e: "ok" },
+      { n: "2 · Lectura", d: r.fuentes.map((f) => `${f.nombre} → ${ETIQUETA_TIPO[f.tipo] || f.tipo}`).join(" · ") || "sin archivos", e: "ok" },
+      { n: "3 · Descompresión", d: ".drawio comprimido, .docx (ZIP) y flujos de PDF se descomprimen con DEFLATE propio, sin librerías.", e: "ok" },
+      { n: "4 · Modelo", d: `${r.escenas.length} escena(s), ${r.documentos.length} documento(s), ${r.imagenes.length} imagen(es).`, e: "ok" },
+      { n: "5 · Evidencias", d: `${r.inventario.ips.length} IP(s), ${r.inventario.vlans.length} VLAN(s), ${r.inventario.cidrs.length} red(es) documentadas.`, e: r.inventario.ips.length ? "ok" : "warn" }
+    ];
+    $("#tabla-mapeo").innerHTML = `<div class="mapeo">${mapeo.map((m) =>
+      `<div class="mapeo-fila"><span class="n">${esc(m.n)}</span><span class="et et--${m.e}">${m.e === "ok" ? "hecho" : "sin datos"}</span><span class="d">${esc(m.d)}</span></div>`).join("")}</div>`;
+
+    $("#chips-escenas").innerHTML = r.escenas.length
+      ? r.escenas.map((e, i) => `<button class="chip" data-escena="${i}" aria-pressed="${i === ESTADO.actual}">${esc(e.nombre)} <b>${escenaDe(e).nodos.length}</b></button>`).join("")
+      : `<span class="vacio" style="padding:2px">Ninguna. Carga un .drawio o exporta una escena a JSON desde otra aplicación.</span>`;
+  }
+
+  /* ----------------------------------------------------------------- evidencias */
+  function renderEvidencias() {
+    const r = ESTADO.resultado;
+    if (!r) return;
+    const ips = r.inventario.ips.slice(0, 80);
+    $("#inv-ips").innerHTML = ips.length
+      ? ips.map((it) => `<tr><td class="num">${esc(it.valor)}</td><td>${esc(it.fuente)}</td>
+          <td style="white-space:normal;color:var(--texto-2)">${esc(it.contexto)}</td></tr>`).join("")
+      : `<tr><td colspan="3" class="vacio">Ningún documento con direcciones IP.</td></tr>`;
+
+    $("#inv-vlan").innerHTML = (r.inventario.vlans.length || r.inventario.cidrs.length)
+      ? `<div class="chips" style="margin-bottom:10px">${r.inventario.vlans.map((v) =>
+          `<span class="chip" style="cursor:default">VLAN ${esc(v.id)}</span>`).join("")}
+         ${r.inventario.cidrs.map((c) => `<span class="chip" style="cursor:default">${esc(c)}</span>`).join("")}</div>
+         ${r.inventario.hosts.length ? `<div class="chips">${r.inventario.hosts.slice(0, 12).map((h) => `<span class="chip" style="cursor:default">${esc(h)}</span>`).join("")}</div>` : ""}
+         ${r.inventario.vlans.map((v) => `<div class="evidencia"><span class="fuente">VLAN ${esc(v.id)} · ${esc(v.fuente)}</span>${esc(v.contexto)}</div>`).join("")}`
+      : `<div class="vacio">Sin VLANs ni redes documentadas.</div>`;
+
+    $("#lista-docs").innerHTML = r.documentos.length
+      ? r.documentos.map((doc) => `<details><summary>${esc(doc.fuente)} · ${doc.texto.length} caracteres</summary>
+          <div class="cuerpo"><div style="max-height:220px;overflow:auto;white-space:pre-wrap;font-size:11.5px;color:var(--texto-2)">${esc(doc.texto.slice(0, 1200))}${doc.texto.length > 1200 ? "\n…" : ""}</div></div></details>`).join("")
+      : `<div class="vacio">Sin documentos. Añade un PDF, un .docx o un .txt.</div>`;
+
+    $("#galeria").innerHTML = r.imagenes.length
+      ? r.imagenes.map((img) => `<figure>${img.datos ? `<img src="${img.datos}" alt="${esc(img.fuente)}">` : ""}<figcaption>${esc(img.fuente)}</figcaption></figure>`).join("")
+      : `<div class="vacio">Sin imágenes adjuntas.</div>`;
+
+    $("#ev-chips").innerHTML = [
+      ["IPs", r.inventario.ips.length],
+      ["VLANs", r.inventario.vlans.length],
+      ["Redes", r.inventario.cidrs.length],
+      ["Docs", r.documentos.length]
+    ].map(([k, v]) => `<span class="kpi">${esc(k)} <b>${v}</b></span>`).join("");
+  }
+
+  /* ------------------------------------------------------------------- acciones */
+  async function cargar(lista) {
+    const nuevos = Array.from(lista || []).filter((f) => f && (f.size == null || f.size >= 0));
+    if (!nuevos.length) return;
+    ESTADO.archivos = ESTADO.archivos.concat(nuevos);
+    ESTADO.demo = false;
+    ESTADO.actual = 0;
+    await procesarTodo();
+    const r = ESTADO.resultado;
+    toast(`${nuevos.length} archivo(s) · ${r.escenas.length} escena(s) · ${r.documentos.length} documento(s)`);
+  }
+
+  function exportar() {
+    const d = escenaActual();
+    const e = entradaActual();
+    if (!e) { toast("No hay escena que exportar"); return; }
+    R3.UI.exportarJSON(`escena-${(e.nombre || "lab").toLowerCase().replace(/[^\w]+/g, "-")}.json`, {
+      generado: new Date().toISOString(),
+      nombre: e.nombre,
+      fuente: e.fuente,
+      nodos: d.nodos,
+      enlaces: d.enlaces,
+      zonas: d.zonas
+    });
+  }
+
+  /* --------------------------------------------------------------- interacción */
+  document.addEventListener("click", (ev) => {
+    const escena = ev.target.closest("[data-escena]");
+    if (escena) { aplicarEscena(parseInt(escena.dataset.escena, 10)); return; }
+    const ir = ev.target.closest("[data-ir]");
+    if (ir) {
+      const n = nodoPorId(ir.dataset.ir);
+      if (n) { ESTADO.sel = { tipo: "nodo", id: n.id }; motor.seleccionar("nodo", n.id); motor.enfocar(n.id); renderInspector(); }
+      return;
+    }
+    const btn = ev.target.closest("[data-accion]");
+    if (!btn) return;
+    const accion = btn.dataset.accion;
+    if (accion === "cargar") $("#archivos").click();
+    if (accion === "ejemplo") cargarEjemplo();
+    if (accion === "ajustar") { motor.zonaSegura = zonaSegura(); motor.encuadrar(); }
+    if (accion === "enfocar" && ESTADO.sel) motor.enfocar(ESTADO.sel.id);
+    if (accion === "origen" && ESTADO.sel) {
+      const sel = $("#sim-origen");
+      if (sel) { sel.value = ESTADO.sel.id; toast("Origen: " + (nodoPorId(ESTADO.sel.id) || {}).nombre); }
+      else toast("Este escenario no tiene enlaces para simular");
+    }
+    if (accion === "destino" && ESTADO.sel) {
+      const sel = $("#sim-destino");
+      if (sel) { sel.value = ESTADO.sel.id; toast("Destino: " + (nodoPorId(ESTADO.sel.id) || {}).nombre); }
+      else toast("Este escenario no tiene enlaces para simular");
+    }
+  });
+
+  document.addEventListener("click", (ev) => {
+    if (ev.target.closest("#btn-trazar")) trazar();
+    if (ev.target.closest("#btn-detener")) { motor.limpiarFlujo(); toast("Simulación detenida"); }
+    if (ev.target.closest("#btn-vaciar")) {
+      ESTADO.archivos = [];
+      ESTADO.demo = false;
+      ESTADO.resultado = null;
+      ESTADO.escenas = [];
+      ESTADO.actual = -1;
+      motor.setDatos({ nodos: [], enlaces: [], zonas: [] });
+      motor.render();
+      ["#hud-titulo", "#hud-desc"].forEach((s) => { const el = $(s); if (el) el.textContent = ""; });
+      renderHUD(); renderInspector(); renderInsumos(); renderEvidencias(); renderSelectEscenas();
+      toast("Laboratorio vacío");
+    }
+  });
+
+  /* -------------------------------------------------------------- carga de datos */
+  const pestañas = R3.UI.pestañas($(".pestanas"), (tab) => {
+    if (tab === "insumos") renderInsumos();
+    if (tab === "evidencias") renderEvidencias();
+  });
+
+  function conectarZona(el) {
+    if (!el) return;
+    el.addEventListener("dragover", (ev) => { ev.preventDefault(); el.classList.add("zona-arrastre-activa"); });
+    el.addEventListener("dragleave", () => el.classList.remove("zona-arrastre-activa"));
+    el.addEventListener("drop", (ev) => {
+      ev.preventDefault();
+      el.classList.remove("zona-arrastre-activa");
+      if (ev.dataTransfer && ev.dataTransfer.files) cargar(ev.dataTransfer.files);
+    });
+  }
+
+  function cargarEjemplo() {
+    ESTADO.archivos = [
+      archivoDeTexto("ejemplo-campus.drawio", R3.EJEMPLO_DRAWIO, "application/xml"),
+      archivoDeTexto(R3.EJEMPLO_DOC.nombre, R3.EJEMPLO_DOC.texto, "text/plain")
+    ];
+    ESTADO.demo = true;
+    ESTADO.actual = 0;
+    procesarTodo().then(() => toast("Ejemplo restaurado"));
+  }
+
+  function arrancar() {
+    R3.UI.aplicarTema(R3.UI.temaInicial());
+
+    $("#btn-cargar").addEventListener("click", () => $("#archivos").click());
+    const c2 = $("#btn-cargar-2");
+    if (c2) c2.addEventListener("click", () => $("#archivos").click());
+    $("#archivos").addEventListener("change", (ev) => {
+      cargar(ev.target.files);
+      ev.target.value = "";
+    });
+    $("#btn-exportar").addEventListener("click", exportar);
+    $("#btn-ajustar").addEventListener("click", () => { motor.zonaSegura = zonaSegura(); motor.encuadrar(); });
+    $("#btn-tema").addEventListener("click", () => R3.UI.alternarTema());
+    $("#btn-girar").addEventListener("click", (ev) => {
+      const on = ev.currentTarget.getAttribute("aria-pressed") !== "true";
+      ev.currentTarget.setAttribute("aria-pressed", on ? "true" : "false");
+      motor.setAutorotar(on);
+    });
+    $("#sel-escena").addEventListener("change", (ev) => {
+      const i = parseInt(ev.target.value, 10);
+      aplicarEscena(Number.isFinite(i) ? i : -1);
+    });
+
+    $$("[data-preset]").forEach((b) => b.addEventListener("click", () => {
+      $$("[data-preset]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+      motor.preset(b.dataset.preset);
+    }));
+
+    conectarZona($("#zona-arrastre"));
+    conectarZona($("#zona-soltar"));
+    const soltar = $("#zona-soltar");
+    if (soltar) {
+      soltar.addEventListener("click", () => $("#archivos").click());
+      soltar.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); $("#archivos").click(); } });
+    }
+    // Evita que el navegador abra el archivo si se suelta fuera de la zona
+    ["dragover", "drop"].forEach((tipo) =>
+      window.addEventListener(tipo, (ev) => { if (!ev.target.closest || !ev.target.closest("#zona-arrastre, #zona-soltar")) ev.preventDefault(); }));
+
+    window.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") { ESTADO.sel = null; motor.seleccionar(null, null); renderInspector(); }
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "o") { ev.preventDefault(); $("#archivos").click(); }
+    });
+
+    cargarEjemplo();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", arrancar);
+  else arrancar();
+})();
+</script>
+</body>
+</html>
